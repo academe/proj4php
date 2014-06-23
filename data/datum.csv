@@ -1,0 +1,17 @@
+code	towgs84	ellipse	nadgrids	name
+wgs84	"0,0,0"	WGS84		WGS84
+ch1903	"674.374,15.056,405.346"	bessel		swiss
+ggrs87 	"-199.87,74.79,246.62"	GRS80		Greek_Geodetic_Reference_System_1987
+nad83	"0,0,0"	GRS80		North_American_Datum_1983
+nad27		clrk66	"@conus,@alaska,@ntv2_0.gsb,@ntv1_can.dat"	North_American_Datum_1927
+potsdam	"606.0,23.0,413.0"	bessel		Potsdam Rauenberg 1950 DHDN
+carthage	"-263.0,6.0,431.0"	clark80		Carthage 1934 Tunisia
+hermannskogel	"653.0,-212.0,449.0"	bessel		Hermannskogel
+ire65	"482.530,-130.596,564.557,-1.042,-0.214,-0.631,8.15"	mod_airy		Ireland 1965
+rassadiran	"-133.63,-157.5,-158.62"	intl		Rassadiran
+nzgd49	"59.47,-5.04,187.44,0.47,-0.1,1.024,-4.5993"	intl		New Zealand Geodetic Datum 1949
+osgb36	"446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894"	airy		Airy 1830
+s_jtsk	"589,76,480"	bessel		S-JTSK (Ferro)
+beduaram	"-106,-87,188"	clrk80		Beduaram
+gunung_segara	"-403,684,41"	bessel		Gunung Segara Jakarta
+rnb72	"106.869,-52.2978,103.724,-0.33657,0.456955,-1.84218,1"	int		Reseau National Belge 1972
