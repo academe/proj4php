@@ -20,14 +20,17 @@ namespace Academe\Proj4Php;
 
 class Proj4php {
     protected $defaultDatum = 'WGS84';
-    public static $ellipsoid = array( );
+
+    public static $ellipsoid = array();
+    public static $datum = array();
+    public static $defs = array();
+    public static $wktProjections = array();
+    public static $primeMeridian = array();
+
+    // DI containers.
     public static $common = null;
-    public static $datum = array( );
-    public static $defs = array( );
-    public static $wktProjections = array( );
     public static $WGS84 = null;
-    public static $primeMeridian = array( );
-    public static $proj = array( );
+    public static $proj = array();
 
     /**
      * Property: defsLookupService
@@ -164,10 +167,11 @@ class Proj4php {
         $this->initEllipsoid();
         $this->initPrimeMeridian();
 
-        self::$proj['longlat'] = new proj4phpLongLat();
-        self::$proj['identity'] = new proj4phpLongLat();
-        self::$common = new proj4phpCommon();
-        self::$WGS84 = new Proj4phpProj( 'WGS84' );
+        // TODO: replace this with some DI magic. Some interfaces will help.
+        self::$proj['longlat'] = new LongLat();
+        self::$proj['identity'] = new LongLat();
+        self::$common = new Common();
+        self::$WGS84 = new Projection('WGS84');
     }
 
     /**
