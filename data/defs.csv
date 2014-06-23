@@ -1,7 +1,7 @@
 ref,value
 EPSG:102757,"+title=NAD 1983 StatePlane Wyoming West Central FIPS 4903 Feet +proj=tmerc +lat_0=40.5 +lon_0=-108.75 +x_0=600000.0 +y_0=0 +k=0.999938 +a=6378137.0  +b=6356752.3141403 +to_meter=0.3048006096012192"
 EPSG:102758,"+title=NAD 1983 StatePlane Wyoming West FIPS 4904 Feet +proj=tmerc +lat_0=40.5  +lon_0=-110.0833333333333 +x_0=800000  +y_0=100000  +k=0.999938 +a=6378137.0 +b=6356752.3141403 +to_meter=0.3048006096012192"
-EPSG:2154,""+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+EPSG:2154,"+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
 EPSG:21781,"+title=CH1903 / LV03 +proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +x_0=600000 +y_0=200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs"
 EPSG:25832,"+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs"
 EPSG:25832,"+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs"
