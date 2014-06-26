@@ -92,7 +92,7 @@ class Mgrs
     }
 
 
-    // Everything below is possibly protected and not public.
+
 
     /**
      * Conversion from degrees to radians.
@@ -101,7 +101,7 @@ class Mgrs
      * @param {number} deg the angle in degrees.
      * @return {number} the angle in radians.
      */
-    public function degToRad($deg)
+    protected function degToRad($deg)
     {
         return deg2rad($deg);
         //return ($deg * (pi() / 180.0));
@@ -114,7 +114,7 @@ class Mgrs
      * @param {number} rad the angle in radians.
      * @return {number} the angle in degrees.
      */
-    public function radToDeg($rad)
+    protected function radToDeg($rad)
     {
         return rad2deg($rad);
         //return (180.0 * ($rad / pi()));
@@ -131,7 +131,7 @@ class Mgrs
      *     northing, zoneNumber and zoneLetter properties, and an optional
      *     accuracy property in digits. Returns null if the conversion failed.
      */
-    public function LLtoUTM($ll)
+    protected function LLtoUTM($ll)
     {
         $Lat = $ll->lat;
         $Long = $ll->lon;
@@ -224,7 +224,7 @@ class Mgrs
      *     for the bounding box calculated according to the provided accuracy.
      *     Returns null if the conversion failed.
      */
-    public function UTMtoLL($utm)
+    protected function UTMtoLL($utm)
     {
         $UTMNorthing = $utm->northing;
         $UTMEasting = $utm->easting;
@@ -317,7 +317,7 @@ class Mgrs
      *     for.
      * @return {char} The letter designator.
      */
-    public function getLetterDesignator($lat)
+    protected function getLetterDesignator($lat)
     {
         //This is here as an error flag to show that the Latitude is
         //outside MGRS limits
@@ -379,7 +379,7 @@ class Mgrs
      * @param {number} accuracy Accuracy in digits (1-5).
      * @return {string} MGRS string for the given UTM location.
      */
-    public function encode($utm, $accuracy)
+    protected function encode($utm, $accuracy)
     {
         $seasting = (string)$utm->easting;
         $snorthing = (string)$utm->northing;
@@ -403,7 +403,7 @@ class Mgrs
      * @param {number} zoneNumber
      * @return the two letter 100k designator for the given UTM location.
      */
-    public function get100kID($easting, $northing, $zoneNumber)
+    protected function get100kID($easting, $northing, $zoneNumber)
     {
         $setParm = $this->get100kSetForZone($zoneNumber);
         $setColumn = floor($easting / 100000);
@@ -418,7 +418,7 @@ class Mgrs
      * @param {number} i An UTM zone number.
      * @return {number} the 100k set the UTM zone is in.
      */
-    public function get100kSetForZone($i)
+    protected function get100kSetForZone($i)
     {
         $setParm = $i % static::NUM_100K_SETS;
 
@@ -445,7 +445,7 @@ class Mgrs
      *        1-60.
      * @return two letter MGRS 100k code.
      */
-    public function getLetter100kID($column, $row, $parm)
+    protected function getLetter100kID($column, $row, $parm)
     {
         // colOrigin and rowOrigin are the letters at the origin of the set
         $index = $parm - 1;
@@ -530,7 +530,7 @@ class Mgrs
      *     zoneNumber and accuracy (in meters) properties.
      */
 
-    public function decode($mgrsString)
+    protected function decode($mgrsString)
     {
         if ($mgrsString && strlen($mgrsString) === 0) {
             throw new \Exception("MGRSPoint coverting from nothing");
@@ -648,7 +648,7 @@ class Mgrs
      * @return {number} The easting value for the given letter and set.
      */
 
-    public function getEastingFromChar($e, $set)
+    protected function getEastingFromChar($e, $set)
     {
         // colOrigin is the letter at the origin of the set for the
         // column
@@ -683,7 +683,7 @@ class Mgrs
     }
 
 
-/**
+    /**
      * Given the second letter from a two-letter MGRS 100k zone, and given the
      * MGRS table set for the zone number, figure out the northing value that
      * should be added to the other, secondary northing value. You have to
@@ -700,7 +700,7 @@ class Mgrs
      * @return {number} The northing value for the given letter and set.
      */
 
-    public function getNorthingFromChar($n, $set)
+    protected function getNorthingFromChar($n, $set)
     {
         if ($n > 'V') {
             throw new \Exception("MGRSPoint given invalid Northing " . $n);
@@ -751,7 +751,7 @@ class Mgrs
      * @return {number}
      */
 
-    public function getMinNorthing($zoneLetter)
+    protected function getMinNorthing($zoneLetter)
     {
         //var northing;
         switch ($zoneLetter) {
