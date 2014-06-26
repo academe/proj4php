@@ -4,6 +4,10 @@ namespace Academe\Proj4Php;
 
 /**
  * Ported from https://github.com/proj4js/mgrs/blob/master/mgrs.js
+ * Good converter site for testing against:
+ * http://www.earthpoint.us/convert.aspx
+ * TODO: expose more of the functionality to make MGRS and UTM available formats.
+ * TODO: interfaces needed for passing Lat/long, MGRS and UTM objects in and out.
  */
 
 class Mgrs
