@@ -50,9 +50,9 @@ class Mgrs
      *      100 m, 4 for 1000 m or 5 for 10000 m). Optional, default is 5.
      * @return {string} the MGRS string for the given location and accuracy.
      */
-    public function forward($ll, $accuracy = null)
+    public function forward($ll, $accuracy = 5)
     {
-        $accuracy = $accuracy || 5; // default accuracy 1m
+        //$accuracy = $accuracy || 5; // default accuracy 1m
 
         $p1 = new \stdClass();
         $p1->lat = $ll[1];
@@ -72,6 +72,7 @@ class Mgrs
     public function inverse($mgrs)
     {
         $bbox = $this->UTMtoLL($this->decode(strtoupper($mgrs)));
+
         return array(
             $bbox->left,
             $bbox->bottom,
@@ -131,7 +132,7 @@ class Mgrs
      *     northing, zoneNumber and zoneLetter properties, and an optional
      *     accuracy property in digits. Returns null if the conversion failed.
      */
-    protected function LLtoUTM($ll)
+    /*protected*/ public function LLtoUTM($ll)
     {
         $Lat = $ll->lat;
         $Long = $ll->lon;
@@ -224,7 +225,7 @@ class Mgrs
      *     for the bounding box calculated according to the provided accuracy.
      *     Returns null if the conversion failed.
      */
-    protected function UTMtoLL($utm)
+    /*protected*/ public function UTMtoLL($utm)
     {
         $UTMNorthing = $utm->northing;
         $UTMEasting = $utm->easting;
@@ -569,7 +570,8 @@ class Mgrs
 
         $zoneNumber = (int)$sb;
 
-        $zoneLetter = substr($mgrsString, ($i++), 1);
+        $zoneLetter = substr($mgrsString, $i, 1);
+        $i += 1;
 
         // Should we check the zone letter here? Why not.
         // These are a handfull of zone letters that are not allowed.
@@ -584,7 +586,7 @@ class Mgrs
             throw new \Exception("MGRSPoint zone letter " . $zoneLetter . " not handled: " . $mgrsString);
         }
 
-        // PHP substr functions slightly differently to JS substring.
+        // PHP substr functions work differently to JS substring.
         //hunK = mgrsString.substring(i, i += 2);
         $hunK = substr($mgrsString, $i, 2);
         $i += 2;
@@ -596,8 +598,7 @@ class Mgrs
 
         // We have a bug where the northing may be 2000000 too low.
 
-        // How
-        // do we know when to roll over?
+        // How do we know when to roll over?
 
         while ($north100k < $this->getMinNorthing($zoneLetter)) {
             $north100k += 2000000;
@@ -606,6 +607,7 @@ class Mgrs
         // calculate the char index for easting/northing separator
         $remainder = $length - $i;
 
+        // Remaining string must be dividable into two equal halves.
         if ($remainder % 2 !== 0) {
             throw new \Exception("MGRSPoint has to have an even number \nof digits after the zone letter and two 100km letters - front \nhalf for easting meters, second half for \nnorthing meters" . $mgrsString);
         }
@@ -615,9 +617,10 @@ class Mgrs
         $sepEasting = 0.0;
         $sepNorthing = 0.0;
         //$accuracyBonus, sepEastingString, sepNorthingString, easting, northing;
+
         if ($sep > 0) {
             $accuracyBonus = 100000.0 / pow(10, $sep);
-            $sepEastingString = substr($mgrsString, $i, $i + $sep);
+            $sepEastingString = substr($mgrsString, $i, $sep);
             $sepEasting = (float)$sepEastingString * $accuracyBonus;
             $sepNorthingString = substr($mgrsString, $i + $sep);
             $sepNorthing = (float)$sepNorthingString * $accuracyBonus;
@@ -708,11 +711,11 @@ class Mgrs
 
         // rowOrigin is the letter at the origin of the set for the
         // column
-        $curRow = substr(static::SET_ORIGIN_ROW_LETTERS, $set - 1, 1);
+        $curRow = ord(substr(static::SET_ORIGIN_ROW_LETTERS, $set - 1, 1));
         $northingValue = 0.0;
         $rewindMarker = false;
 
-        while ($curRow !== substr($n, 0, 1)) {
+        while ($curRow !== ord(substr($n, 0, 1))) {
             $curRow++;
 
             if ($curRow === static::I) {
