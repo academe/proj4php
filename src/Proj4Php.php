@@ -18,7 +18,7 @@ namespace Academe\Proj4Php;
 //require_once($dir . "/proj4phpLongLat.php");
 //require_once($dir . "/proj4phpPoint.php");
 
-class Proj4php {
+class Proj4Php {
     protected $defaultDatum = 'WGS84';
 
     public static $ellipsoid = array();
@@ -409,15 +409,14 @@ class Proj4php {
      */
     public static function loadScript($filename, $onload = null, $onfail = null, $loadCheck = null)
     {
-        if( stripos($filename, 'http://') !== false ) {
+        if (stripos($filename, 'http://') !== false) {
             return @file_get_contents($filename);
-        }
-        elseif( file_exists( $filename ) ) {
+        } elseif (file_exists($filename)) {
             require_once($filename);
             return true;
         }
         else {
-            throw(new Exception( "File $filename could not be found or was not able to be loaded." ));
+            throw (new \Exception( "File $filename could not be found or was not able to be loaded." ));
             return false;
         }
     }

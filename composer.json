@@ -1,0 +1,7 @@
+{
+	"autoload": {
+		"psr-4": {
+			"Academe\\Proj4Php\\": "src/"
+		}
+	}
+}

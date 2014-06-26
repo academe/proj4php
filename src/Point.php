@@ -60,7 +60,7 @@ class Point {
      */
     public function _clone()
     {
-        return new Proj4phpPoint( $this->x, $this->y, $this->z );
+        return new Point($this->x, $this->y, $this->z);
     }
 
     /**

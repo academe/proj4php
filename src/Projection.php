@@ -80,6 +80,7 @@ class Projection {
      * Parameters:
      * $srsCode - a code for map projection definition parameters.  These are usually
      * (but not always) EPSG codes.
+     * TODO: also support the raw def string being passed in and parsed here.
      */
     public function __construct($srsCode)
     {
@@ -150,18 +151,18 @@ class Projection {
      */
     public function loadProjDefinition()
     {
-        //check in memory
-        if( array_key_exists( $this->srsCode, Proj4php::$defs ) ) {
+        // Check if in memory.
+        if (array_key_exists($this->srsCode, Proj4php::$defs)) {
             $this->defsLoaded();
             return;
         }
-        //else check for def on the server
-        $filename = dirname( __FILE__ ) . '/defs/' . strtoupper( $this->srsAuth ) . $this->srsProjNumber . '.php';
-        
+
+        // Otherwise check for def on the server
+        $filename = dirname(__FILE__) . '/defs/' . strtoupper( $this->srsAuth ) . $this->srsProjNumber . '.php';
+
         try {
-            Proj4php::loadScript( $filename );
+            Proj4php::loadScript($filename);
             $this->defsLoaded(); // succes
-            
         } catch ( Exception $e ) {
             $this->loadFromService(); // fail
         }
@@ -172,15 +173,15 @@ class Projection {
      *    Creates the REST URL for loading the definition from a web service and 
      *    loads it.
      *
-     *
      * DO IT AGAIN. : SHOULD PHP CODE BE GET BY WEBSERVICES ?
      */
     public function loadFromService()
     {
         //else load from web service
         $url = Proj4php::$defsLookupService . '/' . $this->srsAuth . '/' . $this->srsProjNumber . '/proj4/';
+
         try {
-            Proj4php::$defs[strtoupper($this->srsAuth) . ":" . $this->srsProjNumber] = Proj4php::loadScript( $url );
+            Proj4php::$defs[strtoupper($this->srsAuth) . ":" . $this->srsProjNumber] = Proj4php::loadScript($url);
         } catch ( Exception $e ) {
             $this->defsFailed();
         }
@@ -229,17 +230,26 @@ class Projection {
      */
     public function loadProjCode($projName)
     {
-        if( array_key_exists( $projName, Proj4php::$proj ) ) {
+        if (array_key_exists( $projName, Proj4php::$proj)) {
             $this->initTransforms();
             return;
         }
-        //the filename for the projection code
-        $filename = dirname( __FILE__ ) . '/projCode/' . $projName . '.php';
+
+        // Must use a fully-qualified namespace when construction as a string.
+        $class = __NAMESPACE__ . '\\Projections\\' . ucfirst($projName);
+
+        if (class_exists($class)) {
+            Proj4php::$proj['merc'] = new $class();
+            $this->loadProjCodeSuccess($projName);
+            return;
+        }
+
+        // The filename for the projection code
+        $filename = dirname(__FILE__) . '/projCode/' . $projName . '.php';
 
         try {
-            Proj4php::loadScript( $filename );
+            Proj4php::loadScript($filename);
             $this->loadProjCodeSuccess( $projName );
-            
         } catch ( Exception $e ) {
             $this->loadProjCodeFailure( $projName );
         }
@@ -645,6 +655,6 @@ class Projection {
             $this->axis = "enu";
         }
 
-        $this->datum = new Proj4phpDatum( $this );
+        $this->datum = new Datum($this);
     }
 }

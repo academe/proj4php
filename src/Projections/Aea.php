@@ -1,6 +1,8 @@
 <?php
 
-namespace Academe\Proj4Php\Projection;
+namespace Academe\Proj4Php\Projections;
+
+use Academe\Proj4Php\Proj4Php;
 
 /*******************************************************************************
   NAME                     ALBERS CONICAL EQUAL AREA
