@@ -6,6 +6,8 @@ namespace Academe\Proj4Php;
  * Ported from https://github.com/proj4js/mgrs/blob/master/mgrs.js
  * Good converter site for testing against:
  * http://www.earthpoint.us/convert.aspx
+ * Description of the UTM/MGRS grid systems:
+ * http://www.luomus.fi/en/utm-mgrs-atlas-florae-europaeae
  * TODO: expose more of the functionality to make MGRS and UTM available formats.
  * TODO: interfaces needed for passing Lat/long, MGRS and UTM objects in and out.
  */
@@ -36,7 +38,7 @@ class Mgrs
      */
     const SET_ORIGIN_ROW_LETTERS = 'AFAFAF';
 
-    // ASCII valuesm of letters.
+    // ASCII values of letters.
     // There will be a much less clumsy way of doing this.
 
     const A = 65; // A
@@ -206,6 +208,7 @@ class Mgrs
 
         $return = new \stdClass();
 
+        // Controversial - should this be trunacted and not rounded?
         $return->northing = round($UTMNorthing);
         $return->easting = round($UTMEasting);
         $return->zoneNumber = $ZoneNumber;
