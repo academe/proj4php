@@ -129,30 +129,6 @@ class Mgrs extends Utm
     }
 
     /**
-     * Conversion from degrees to radians.
-     *
-     * @private
-     * @param {number} deg the angle in degrees.
-     * @return {number} the angle in radians.
-     */
-    protected function degToRad($deg)
-    {
-        return deg2rad($deg);
-    }
-
-    /**
-     * Conversion from radians to degrees.
-     *
-     * @private
-     * @param {number} rad the angle in radians.
-     * @return {number} the angle in degrees.
-     */
-    protected function radToDeg($rad)
-    {
-        return rad2deg($rad);
-    }
-
-    /**
      * Encodes a UTM location as MGRS string.
      *
      * @private
