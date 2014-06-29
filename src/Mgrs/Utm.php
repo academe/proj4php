@@ -1,6 +1,6 @@
 <?php
 
-namespace Academe\Proj4Php;
+namespace Academe\Proj4Php\Mgrs;
 
 /**
  * Universal Transverse Mercator (UTM)
@@ -28,7 +28,16 @@ class Utm
     protected static $ecc_squared = 0.006694380023;
 
     /**
+     * The default number of digits to use in output formatting.
+     * The value is the number of digits used, ranging from 0 to 5.
+     * 5 is an accuracy of 1m, 4 is 10m, 3 is 100m and so on.
+     */
+
+    protected $accuracy = 5;
+
+    /**
      * Constructor.
+     * TODO: also accept an array, maybe even a lat/long object.
      */
     public function __construct($northing, $easting, $zone_number, $zone_letter)
     {
@@ -40,7 +49,8 @@ class Utm
 
     /**
      * Convert from Lat/Long.
-     * Returns a Utm object.
+     * Returns a Utm object, either a new object or the current object, depending
+     * on whether called staticly or not.
      */
     public static function fromLatLong($latitude, $longitude = null)
     {
@@ -231,7 +241,7 @@ class Utm
      *     for the bounding box calculated according to the provided accuracy.
      *     Returns null if the conversion failed.
      */
-    public function toLatLong($accuracy = null)
+    public function toLatLong()
     {
         $utm_northing = $this->northing;
         $utm_easting = $this->easting;
@@ -246,7 +256,7 @@ class Utm
 
         $e1 = (1 - sqrt(1 - static::$ecc_squared)) / (1 + sqrt(1 - static::$ecc_squared));
 
-        // remove 500,000 meter offset for longitude
+        // Remove 500,000 meter offset for longitude
         $x = $utm_easting - 500000.0;
         $y = $utm_northing;
 
@@ -285,28 +295,56 @@ class Utm
         $long = ($D - (1 + 2 * $T1 + $C1) * pow($D, 3) / 6 + (5 - 2 * $C1 + 28 * $T1 - 3 * $C1 * $C1 + 8 * $eccPrimeSquared + 24 * $T1 * $T1) * pow($D, 5) / 120) / cos($phi1Rad);
         $long = $LongOrigin + rad2deg($long);
 
-        $result = new \stdClass();
+        // Returning a LatLong object.
 
-        if (isset($accuracy)) {
-            $top_right = new static(
-                $this->northing + $accuracy,
-                $this->easting + $accuracy,
-                $this->zone_number,
-                $this->zone_letter
-            );
-
-            $top_right_lat_long = $top_right->toLatLong();
-
-            $result->top = $top_right_lat_long->lat;
-            $result->right = $top_right_lat_long->long;
-            $result->bottom = $lat;
-            $result->left = $long;
-        } else {
-            $result->lat = $lat;
-            $result->long = $long;
-        }
+        $result = new LatLong();
+        $result->setLatitude($lat);
+        $result->setLongitude($long);
 
         return $result;
+    }
+
+    /**
+     * The square bounded by the accuracy.
+     */
+    public function toSquare($accuracy = null)
+    {
+        // Get the lat/long coordinates - the bottom left corner of the square.
+        $lat_long = $this->toLatLong();
+
+        // TODO: we need a Square object that can manage the bounds.
+        // Maybe it just has two LatLong classes injected?
+        $result = new \stdClass();
+
+        $top_right = new static(
+            $this->northing + $this->getSize($accuracy),
+            $this->easting + $this->getSize($accuracy),
+            $this->zone_number,
+            $this->zone_letter
+        );
+
+        $top_right_lat_long = $top_right->toLatLong();
+
+        $result->top = $top_right_lat_long->getLatitude();
+        $result->right = $top_right_lat_long->getLongitude();
+        $result->bottom = $lat_long->getLatitude();
+        $result->left = $lat_long->getLongitude();
+
+        return $result;
+    }
+
+    /**
+     * Get the size of the square in metres.
+     */
+    public function getSize($accuracy = null)
+    {
+        // Use the current accuracy, if not provided.
+        if ( ! isset($accuracy)) {
+            $accuracy = $this->accuracy;
+        }
+
+        // The size of the square is 1m for an accuracy of 5 (10^0)
+        return pow(10, 5 - $accuracy);
     }
 }
 

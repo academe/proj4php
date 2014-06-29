@@ -1,6 +1,6 @@
 <?php
 
-namespace Academe\Proj4Php;
+namespace Academe\Proj4Php\Mgrs;
 
 /**
  * Ported from https://github.com/proj4js/mgrs/blob/master/mgrs.js
@@ -12,7 +12,7 @@ namespace Academe\Proj4Php;
  * TODO: interfaces needed for passing Lat/long, MGRS and UTM objects in and out.
  */
 
-class Mgrs
+class Mgrs extends Utm
 {
     /**
      * UTM zones are grouped, and assigned to one of a group of 6
@@ -46,6 +46,14 @@ class Mgrs
     const O = 79; // O
     const V = 86; // V
     const Z = 90; // Z
+
+    /**
+     * Construction requires a coordinate - a lat/long, an MRGS coordiate etc.
+     */
+    public function __construct()
+    {
+        // TODO: don't forget the parent class handles $northing, $easting, $zone_number and $zone_letter.
+    }
 
     /**
      * Conversion of lat/lon to MGRS.
@@ -138,7 +146,7 @@ class Mgrs
      *     northing, zoneNumber and zoneLetter properties, and an optional
      *     accuracy property in digits. Returns null if the conversion failed.
      */
-    /*protected*/ public function LLtoUTM($ll)
+    /*protected*/ /*public function LLtoUTM($ll)
     {
         $Lat = $ll->lat;
         $Long = $ll->lon;
@@ -216,7 +224,7 @@ class Mgrs
 
         return $return;
     }
-
+*/
     /**
      * Converts UTM coords to lat/long, using the WGS84 ellipsoid. This is a convenience
      * class where the Zone can be specified as a single string eg."60N" which
@@ -232,7 +240,7 @@ class Mgrs
      *     for the bounding box calculated according to the provided accuracy.
      *     Returns null if the conversion failed.
      */
-    /*protected*/ public function UTMtoLL($utm)
+    /*protected*/ /*public function UTMtoLL($utm)
     {
         $UTMNorthing = $utm->northing;
         $UTMEasting = $utm->easting;
@@ -316,7 +324,7 @@ class Mgrs
 
         return $result;
     }
-
+*/
     /**
      * Calculates the MGRS letter designator for the given latitude.
      *
@@ -325,6 +333,7 @@ class Mgrs
      *     for.
      * @return {char} The letter designator.
      */
+/*
     protected function getLetterDesignator($lat)
     {
         //This is here as an error flag to show that the Latitude is
@@ -377,7 +386,7 @@ class Mgrs
 
         return $LetterDesignator;
     }
-
+*/
     /**
      * Encodes a UTM location as MGRS string.
      *
