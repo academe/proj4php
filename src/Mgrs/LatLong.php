@@ -84,4 +84,23 @@ class LatLong implements LatLongInterface
     {
         return $this->longitude;
     }
+
+    /**
+     * Constructor to set values.
+     */
+    public function __construct($latitude, $longitude = null)
+    {
+        if ( ! isset($longitude) && is_array($latitude) && count($latitude) == 2) {
+            list($lat, $long) = array_values($latitude);
+            $this->setLatitude($lat);
+            $this->setLongitude($long);
+        } elseif (isset($longitude)) {
+            $this->setLatitude($latitude);
+            $this->setLongitude($longitude);
+        } else {
+            throw new InvalidArgumentException(
+                'Coordinate should be a an array; %s passed instead', gettype($coordinates)
+            );
+        }
+    }
 }

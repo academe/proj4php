@@ -48,66 +48,85 @@ class Mgrs extends Utm
     const Z = 90; // Z
 
     /**
-     * Construction requires a coordinate - a lat/long, an MRGS coordiate etc.
+     * The minumum northing for a zone letter.
      */
-    public function __construct()
-    {
-        // TODO: don't forget the parent class handles $northing, $easting, $zone_number and $zone_letter.
-    }
+
+    protected static $zone_min_northing = array(
+        'C' => 1100000.0,
+        'D' => 2000000.0,
+        'E' => 2800000.0,
+        'F' => 3700000.0,
+        'G' => 4600000.0,
+        'H' => 5500000.0,
+        'J' => 6400000.0,
+        'K' => 7300000.0,
+        'L' => 8200000.0,
+        'M' => 9100000.0,
+        'N' => 0.0,
+        'P' => 800000.0,
+        'Q' => 1700000.0,
+        'R' => 2600000.0,
+        'S' => 3500000.0,
+        'T' => 4400000.0,
+        'U' => 5300000.0,
+        'V' => 6200000.0,
+        'W' => 7000000.0,
+        'X' => 7900000.0,
+    );
 
     /**
-     * Conversion of lat/lon to MGRS.
+     * Conversion of lat/lon to MGRS reference.
      *
      * @param {object} ll Object literal with lat and lon properties on a
      *     WGS84 ellipsoid.
      * @param {int} accuracy Accuracy in digits (5 for 1 m, 4 for 10 m, 3 for
      *      100 m, 4 for 1000 m or 5 for 10000 m). Optional, default is 5.
      * @return {string} the MGRS string for the given location and accuracy.
+     *
+     * TODO: this should be static if it is doing this full conversion in one step.
      */
-    public function forward($ll, $accuracy = 5)
+    public static function forward($lat_long, $accuracy = null)
     {
-        //$accuracy = $accuracy || 5; // default accuracy 1m
+        // default accuracy 1m
+        $accuracy = $accuracy || static::MAX_ACCURACY;
 
-        $p1 = new \stdClass();
-        $p1->lat = $ll[1];
-        $p1->lon = $ll[0];
+        // This handles $lat_long being in any of a number of different formats.
+        $mgrs = static::fromLatLong($lat_long);
 
-        return $this->encode($this->LLtoUTM($p1), $accuracy);
+        return static::encode($mgrs, $accuracy);
     }
 
     /**
-     * Conversion of MGRS to lat/lon.
+     * Conversion of MGRS reference to a lat/lon bounding box.
      *
      * @param {string} mgrs MGRS string.
      * @return {array} An array with left (longitude), bottom (latitude), right
      *     (longitude) and top (latitude) values in WGS84, representing the
      *     bounding box for the provided MGRS reference.
+     * We actually want to return a Square.
      */
-    public function inverse($mgrs)
+    public static function inverse($mgrs_string)
     {
-        $bbox = $this->UTMtoLL($this->decode(strtoupper($mgrs)));
-
-        return array(
-            $bbox->left,
-            $bbox->bottom,
-            $bbox->right,
-            $bbox->top,
-        );
+        $mgrs = static::decode(strtoupper($mgrs_string));
+        return $mgrs->toSquare();
     }
 
-    public function toPoint($mgrsStr)
+    /**
+     * Convert an MGRS coordinate reference string to a LatLong coordinate.
+     * The point is the centre of the square, according to the accuracy that the
+     * reference carries (the number of digits it uses).
+     */
+    public static function toPoint($mgrs_string)
     {
-        $llbbox = $this->inverse($mgrsStr);
+        $lat_long_bounding_box = static::inverse($mgrs_string);
 
-        // Return the centre of the box.
-        return array(
-            ($llbbox[2] + $llbbox[0]) / 2,
-            ($llbbox[3] + $llbbox[1]) / 2,
+        // Return the centre of the box as a LatLong object.
+
+        return new LatLong(
+            ($lat_long_bounding_box->getBottomLeft()->getLatitude() + $lat_long_bounding_box->getTopRight()->getLatitude()) / 2,
+            ($lat_long_bounding_box->getBottomLeft()->getLongitude() + $lat_long_bounding_box->getTopRight()->getLongitude()) / 2
         );
     }
-
-
-
 
     /**
      * Conversion from degrees to radians.
@@ -119,7 +138,6 @@ class Mgrs extends Utm
     protected function degToRad($deg)
     {
         return deg2rad($deg);
-        //return ($deg * (pi() / 180.0));
     }
 
     /**
@@ -132,261 +150,8 @@ class Mgrs extends Utm
     protected function radToDeg($rad)
     {
         return rad2deg($rad);
-        //return (180.0 * ($rad / pi()));
     }
 
-    /**
-     * Converts a set of Longitude and Latitude co-ordinates to UTM
-     * using the WGS84 ellipsoid.
-     *
-     * @private
-     * @param {object} ll Object literal with lat and lon properties
-     *     representing the WGS84 coordinate to be converted.
-     * @return {object} Object literal containing the UTM value with easting,
-     *     northing, zoneNumber and zoneLetter properties, and an optional
-     *     accuracy property in digits. Returns null if the conversion failed.
-     */
-    /*protected*/ /*public function LLtoUTM($ll)
-    {
-        $Lat = $ll->lat;
-        $Long = $ll->lon;
-        $a = 6378137.0; //ellip.radius;
-        $eccSquared = 0.00669438; //ellip.eccsq;
-        $k0 = 0.9996;
-        //$LongOrigin; // ?
-        //$eccPrimeSquared; // ?
-        //$N, $T, $C, $A, $M; // ?
-        $LatRad = $this->degToRad($Lat);
-        $LongRad = $this->degToRad($Long);
-        $LongOriginRad;
-        $ZoneNumber;
-        // (int)
-        $ZoneNumber = floor(($Long + 180) / 6) + 1;
-
-        //Make sure the longitude 180.00 is in Zone 60
-        if ($Long === 180) {
-            $ZoneNumber = 60;
-        }
-
-        // Special zone for Norway
-        if ($Lat >= 56.0 && $Lat < 64.0 && $Long >= 3.0 && $Long < 12.0) {
-            $ZoneNumber = 32;
-        }
-
-        // Special zones for Svalbard
-        if ($Lat >= 72.0 && $Lat < 84.0) {
-            if ($Long >= 0.0 && $Long < 9.0) {
-                $ZoneNumber = 31;
-            } else if ($Long >= 9.0 && $Long < 21.0) {
-                $ZoneNumber = 33;
-            } else if ($Long >= 21.0 && $Long < 33.0) {
-                $ZoneNumber = 35;
-            } else if ($Long >= 33.0 && $Long < 42.0) {
-                $ZoneNumber = 37;
-            }
-        }
-
-        $LongOrigin = ($ZoneNumber - 1) * 6 - 180 + 3; //+3 puts origin
-        // in middle of
-        // zone
-        $LongOriginRad = $this->degToRad($LongOrigin);
-
-        $eccPrimeSquared = ($eccSquared) / (1 - $eccSquared);
-
-        $N = $a / sqrt(1 - $eccSquared * pow(sin($LatRad), 2));
-        $T = pow(tan($LatRad), 2);
-        $C = $eccPrimeSquared * pow(cos($LatRad), 2);
-        $A = cos($LatRad) * ($LongRad - $LongOriginRad);
-
-        $M = $a * (
-            (1 - $eccSquared / 4 - 3 * pow($eccSquared, 2) / 64 - 5 * pow($eccSquared, 3) / 256) * $LatRad
-            - (3 * $eccSquared / 8 + 3 * pow($eccSquared, 2) / 32 + 45 * pow($eccSquared, 3) / 1024) * sin(2 * $LatRad)
-            + (15 * pow($eccSquared, 2) / 256 + 45 * pow($eccSquared, 3) / 1024) * sin(4 * $LatRad)
-            - (35 * pow($eccSquared, 3) / 3072) * sin(6 * $LatRad)
-        );
-
-        $UTMEasting = ($k0 * $N * ($A + (1 - $T + $C) * pow($A, 3) / 6.0 + (5 - 18 * pow($T, 3) + 72 * $C - 58 * $eccPrimeSquared) * pow($A, 5) / 120.0) + 500000.0);
-
-        $UTMNorthing = ($k0 * ($M + $N * tan($LatRad) * ($A * $A / 2 + (5 - $T + 9 * $C + 4 * pow($C, 2)) * pow($A, 4) / 24.0 + (61 - 58 * pow($T, 3) + 600 * $C - 330 * $eccPrimeSquared) * pow($A, 6) / 720.0)));
-
-        if ($Lat < 0.0) {
-            $UTMNorthing += 10000000.0; //10000000 meter offset for
-            // southern hemisphere
-        }
-
-        $return = new \stdClass();
-
-        // Controversial - should this be trunacted and not rounded?
-        $return->northing = round($UTMNorthing);
-        $return->easting = round($UTMEasting);
-        $return->zoneNumber = $ZoneNumber;
-        $return->zoneLetter = $this->getLetterDesignator($Lat);
-
-        return $return;
-    }
-*/
-    /**
-     * Converts UTM coords to lat/long, using the WGS84 ellipsoid. This is a convenience
-     * class where the Zone can be specified as a single string eg."60N" which
-     * is then broken down into the ZoneNumber and ZoneLetter.
-     *
-     * @private
-     * @param {object} utm An object literal with northing, easting, zoneNumber
-     *     and zoneLetter properties. If an optional accuracy property is
-     *     provided (in meters), a bounding box will be returned instead of
-     *     latitude and longitude.
-     * @return {object} An object literal containing either lat and lon values
-     *     (if no accuracy was provided), or top, right, bottom and left values
-     *     for the bounding box calculated according to the provided accuracy.
-     *     Returns null if the conversion failed.
-     */
-    /*protected*/ /*public function UTMtoLL($utm)
-    {
-        $UTMNorthing = $utm->northing;
-        $UTMEasting = $utm->easting;
-        $zoneLetter = $utm->zoneLetter;
-        $zoneNumber = $utm->zoneNumber;
-
-        // check the ZoneNummber is valid
-        if ($zoneNumber < 0 || $zoneNumber > 60) {
-            return null;
-        }
-
-        $k0 = 0.9996;
-        $a = 6378137.0; //ellip.radius;
-        $eccSquared = 0.00669438; //ellip.eccsq;
-        //$eccPrimeSquared;
-        $e1 = (1 - sqrt(1 - $eccSquared)) / (1 + sqrt(1 - $eccSquared));
-        //N1, T1, C1, R1, D, M;
-        //$LongOrigin;
-        //$mu, $phi1Rad;
-
-        // remove 500,000 meter offset for longitude
-        $x = $UTMEasting - 500000.0;
-        $y = $UTMNorthing;
-
-        // We must know somehow if we are in the Northern or Southern
-        // hemisphere, this is the only time we use the letter So even
-        // if the Zone letter isn't exactly correct it should indicate
-        // the hemisphere correctly
-        if ($zoneLetter < 'N') {
-            $y -= 10000000.0; // remove 10,000,000 meter offset used
-            // for southern hemisphere
-        }
-
-        // There are 60 zones with zone 1 being at West -180 to -174
-        $LongOrigin = ($zoneNumber - 1) * 6 - 180 + 3; // +3 puts origin
-        // in middle of
-        // zone
-
-        $eccPrimeSquared = ($eccSquared) / (1 - $eccSquared);
-
-        $M = $y / $k0;
-        $mu = $M / ($a * (1 - $eccSquared / 4 - 3 * $eccSquared * $eccSquared / 64 - 5 * $eccSquared * $eccSquared * $eccSquared / 256));
-
-        $phi1Rad = $mu + (3 * $e1 / 2 - 27 * $e1 * $e1 * $e1 / 32) * sin(2 * $mu) + (21 * $e1 * $e1 / 16 - 55 * $e1 * $e1 * $e1 * $e1 / 32) * sin(4 * $mu) + (151 * $e1 * $e1 * $e1 / 96) * sin(6 * $mu);
-        // double phi1 = ProjMath.radToDeg(phi1Rad);
-
-        $N1 = $a / sqrt(1 - $eccSquared * pow(sin($phi1Rad), 2));
-        $T1 = pow(tan($phi1Rad), 2);
-        $C1 = $eccPrimeSquared * pow(cos($phi1Rad), 2);
-        $R1 = $a * (1 - $eccSquared) / pow(1 - $eccSquared * pow(sin($phi1Rad), 2), 1.5);
-        $D = $x / ($N1 * $k0);
-
-        $lat = $phi1Rad
-            - ($N1 * tan($phi1Rad) / $R1) * (pow($D, 2) / 2 - (5 + 3 * $T1 + 10 * $C1 - 4 * $C1 * $C1 - 9 * $eccPrimeSquared) * pow($D, 4) / 24 + (61 + 90 * $T1 + 298 * $C1 + 45 * pow($T1, 2) - 252 * $eccPrimeSquared - 3 * pow($C1, 2)) * pow($D, 6) / 720);
-        $lat = $this->radToDeg($lat);
-
-        $lon = ($D - (1 + 2 * $T1 + $C1) * pow($D, 3) / 6 + (5 - 2 * $C1 + 28 * $T1 - 3 * $C1 * $C1 + 8 * $eccPrimeSquared + 24 * $T1 * $T1) * pow($D, 5) / 120) / cos($phi1Rad);
-        $lon = $LongOrigin + $this->radToDeg($lon);
-
-        //var result;
-        $result = new \stdClass();
-
-        if (isset($utm->accuracy)) {
-            $topRightValues = new \stdClass;
-
-            $topRightValues->northing = $utm->northing + $utm->accuracy;
-            $topRightValues->easting = $utm->easting + $utm->accuracy;
-            $topRightValues->zoneLetter = $utm->zoneLetter;
-            $topRightValues->zoneNumber = $utm->zoneNumber;
-
-            $topRight = $this->UTMtoLL($topRightValues);
-
-            $result->top = $topRight->lat;
-            $result->right = $topRight->lon;
-            $result->bottom = $lat;
-            $result->left = $lon;
-        } else {
-            $result->lat = $lat;
-            $result->lon = $lon;
-        }
-
-        return $result;
-    }
-*/
-    /**
-     * Calculates the MGRS letter designator for the given latitude.
-     *
-     * @private
-     * @param {number} lat The latitude in WGS84 to get the letter designator
-     *     for.
-     * @return {char} The letter designator.
-     */
-/*
-    protected function getLetterDesignator($lat)
-    {
-        //This is here as an error flag to show that the Latitude is
-        //outside MGRS limits
-
-        $LetterDesignator = 'Z';
-
-        // I'm sure we can turn this into a simple formula, perhaps with a string lookup.
-        if ((84 >= $lat) && ($lat >= 72)) {
-            $LetterDesignator = 'X';
-        } else if ((72 > $lat) && ($lat >= 64)) {
-            $LetterDesignator = 'W';
-        } else if ((64 > $lat) && ($lat >= 56)) {
-            $LetterDesignator = 'V';
-        } else if ((56 > $lat) && ($lat >= 48)) {
-            $LetterDesignator = 'U';
-        } else if ((48 > $lat) && ($lat >= 40)) {
-            $LetterDesignator = 'T';
-        } else if ((40 > $lat) && ($lat >= 32)) {
-            $LetterDesignator = 'S';
-        } else if ((32 > $lat) && ($lat >= 24)) {
-            $LetterDesignator = 'R';
-        } else if ((24 > $lat) && ($lat >= 16)) {
-            $LetterDesignator = 'Q';
-        } else if ((16 > $lat) && ($lat >= 8)) {
-            $LetterDesignator = 'P';
-        } else if ((8 > $lat) && ($lat >= 0)) {
-            $LetterDesignator = 'N';
-        } else if ((0 > $lat) && ($lat >= -8)) {
-            $LetterDesignator = 'M';
-        } else if ((-8 > $lat) && ($lat >= -16)) {
-            $LetterDesignator = 'L';
-        } else if ((-16 > $lat) && ($lat >= -24)) {
-            $LetterDesignator = 'K';
-        } else if ((-24 > $lat) && ($lat >= -32)) {
-            $LetterDesignator = 'J';
-        } else if ((-32 > $lat) && ($lat >= -40)) {
-            $LetterDesignator = 'H';
-        } else if ((-40 > $lat) && ($lat >= -48)) {
-            $LetterDesignator = 'G';
-        } else if ((-48 > $lat) && ($lat >= -56)) {
-            $LetterDesignator = 'F';
-        } else if ((-56 > $lat) && ($lat >= -64)) {
-            $LetterDesignator = 'E';
-        } else if ((-64 > $lat) && ($lat >= -72)) {
-            $LetterDesignator = 'D';
-        } else if ((-72 > $lat) && ($lat >= -80)) {
-            $LetterDesignator = 'C';
-        }
-
-        return $LetterDesignator;
-    }
-*/
     /**
      * Encodes a UTM location as MGRS string.
      *
@@ -395,19 +160,18 @@ class Mgrs extends Utm
      *     zoneLetter, zoneNumber
      * @param {number} accuracy Accuracy in digits (1-5).
      * @return {string} MGRS string for the given UTM location.
+     * @todo Test this on easting/northing strings that are less than 5 digits long.
      */
-    protected function encode($utm, $accuracy)
+    protected static function encode($utm, $accuracy)
     {
         $seasting = (string)$utm->easting;
         $snorthing = (string)$utm->northing;
 
-        return $utm->zoneNumber
-            . $utm->zoneLetter
-            . $this->get100kID($utm->easting, $utm->northing, $utm->zoneNumber)
-            . substr($seasting, strlen($seasting) - 5, $accuracy)
-            //. $seasting.substr($seasting.length - 5, $accuracy)
-            . substr($snorthing, strlen($snorthing) - 5, $accuracy);
-            //. $snorthing.substr($snorthing.length - 5, $accuracy);
+        return $utm->zone_number
+            . $utm->zone_letter
+            . static::get100kID($utm->easting, $utm->northing, $utm->zone_number)
+            . substr($seasting, strlen($seasting) - static::MAX_ACCURACY, $accuracy)
+            . substr($snorthing, strlen($snorthing) - static::MAX_ACCURACY, $accuracy);
     }
 
     /**
@@ -420,12 +184,12 @@ class Mgrs extends Utm
      * @param {number} zoneNumber
      * @return the two letter 100k designator for the given UTM location.
      */
-    protected function get100kID($easting, $northing, $zoneNumber)
+    protected static function get100kID($easting, $northing, $zoneNumber)
     {
-        $setParm = $this->get100kSetForZone($zoneNumber);
+        $setParm = static::get100kSetForZone($zoneNumber);
         $setColumn = floor($easting / 100000);
         $setRow = floor($northing / 100000) % 20;
-        return $this->getLetter100kID($setColumn, $setRow, $setParm);
+        return static::getLetter100kID($setColumn, $setRow, $setParm);
     }
 
     /**
@@ -435,7 +199,7 @@ class Mgrs extends Utm
      * @param {number} i An UTM zone number.
      * @return {number} the 100k set the UTM zone is in.
      */
-    protected function get100kSetForZone($i)
+    protected static function get100kSetForZone($i)
     {
         $setParm = $i % static::NUM_100K_SETS;
 
@@ -467,9 +231,7 @@ class Mgrs extends Utm
         // colOrigin and rowOrigin are the letters at the origin of the set
         $index = $parm - 1;
         $colOrigin = ord(substr(static::SET_ORIGIN_COLUMN_LETTERS, $index, 1));
-        //$colOrigin = SET_ORIGIN_COLUMN_LETTERS.charCodeAt(index);
         $rowOrigin = ord(substr(static::SET_ORIGIN_ROW_LETTERS, $index, 1));
-        //$rowOrigin = SET_ORIGIN_ROW_LETTERS.charCodeAt(index);
 
         // colInt and rowInt are the letters to build to return
         $colInt = $colOrigin + $column - 1;
@@ -519,7 +281,10 @@ class Mgrs extends Utm
             $rowInt++;
         }
 
-        if ((($rowInt === static::O) || (($rowOrigin < static::O) && ($rowInt > static::O))) || ((($rowInt > static::O) || ($rowOrigin < static::O)) && $rollover)) {
+        if (
+            (($rowInt === static::O) || (($rowOrigin < static::O) && ($rowInt > static::O)))
+            || ((($rowInt > static::O) || ($rowOrigin < static::O)) && $rollover)
+        ) {
             $rowInt++;
 
             if ($rowInt === static::I) {
@@ -546,18 +311,16 @@ class Mgrs extends Utm
      * @return {object} An object literal with easting, northing, zoneLetter,
      *     zoneNumber and accuracy (in meters) properties.
      */
-
-    protected function decode($mgrsString)
+    protected static function decode($mgrsString)
     {
         if ($mgrsString && strlen($mgrsString) === 0) {
-            throw new \Exception("MGRSPoint coverting from nothing");
+            throw new \Exception("MGRSPoint converting from nothing");
         }
 
         $length = strlen($mgrsString);
 
         $hunK = null;
         $sb = "";
-        //$testChar;
         $i = 0;
 
         // get Zone number
@@ -568,7 +331,6 @@ class Mgrs extends Utm
         // If there are less than two digits, then it seems to be happy (though
         // en exception is raised later if there are no digits).
 
-        //while (!(/[A-Z]/).test(testChar = mgrsString.charAt(i))) { // FIX
         while ( ! preg_match('/[A-Z]/', substr($mgrsString, $i, 1))) {
             if ($i >= 2) {
                 throw new \Exception("MGRSPoint bad conversion from: " . $mgrsString);
@@ -590,7 +352,8 @@ class Mgrs extends Utm
         $i += 1;
 
         // Should we check the zone letter here? Why not.
-        // These are a handfull of zone letters that are not allowed.
+        // These are a handful of zone letters that are not allowed.
+        // CHECKME: A, B, Y and Z all cover polar regions, so this may not be strictly correct.
         if (
             $zoneLetter <= 'A'
             || $zoneLetter === 'B'
@@ -607,16 +370,16 @@ class Mgrs extends Utm
         $hunK = substr($mgrsString, $i, 2);
         $i += 2;
 
-        $set = $this->get100kSetForZone($zoneNumber);
+        $set = static::get100kSetForZone($zoneNumber);
 
-        $east100k = $this->getEastingFromChar(substr($hunK, 0, 1), $set);
-        $north100k = $this->getNorthingFromChar(substr($hunK, 1, 1), $set);
+        $east100k = static::getEastingFromChar(substr($hunK, 0, 1), $set);
+        $north100k = static::getNorthingFromChar(substr($hunK, 1, 1), $set);
 
         // We have a bug where the northing may be 2000000 too low.
 
         // How do we know when to roll over?
 
-        while ($north100k < $this->getMinNorthing($zoneLetter)) {
+        while ($north100k < static::getMinNorthing($zoneLetter)) {
             $north100k += 2000000;
         }
 
@@ -645,15 +408,16 @@ class Mgrs extends Utm
         $easting = $sepEasting + $east100k;
         $northing = $sepNorthing + $north100k;
 
-        $return = new \stdClass;
+        // Return a new Mgrs object.
 
-        $return->easting = $easting;
-        $return->northing = $northing;
-        $return->zoneLetter = $zoneLetter;
-        $return->zoneNumber = $zoneNumber;
-        $return->accuracy = $accuracyBonus;
+        $mgrs = new static(
+            $easting,
+            $northing,
+            $zoneLetter,
+            $zoneNumber
+        );
 
-        return $return;
+        return $mgrs;
     }
 
     /**
@@ -667,10 +431,9 @@ class Mgrs extends Utm
      * @return {number} The easting value for the given letter and set.
      */
 
-    protected function getEastingFromChar($e, $set)
+    protected static function getEastingFromChar($e, $set)
     {
-        // colOrigin is the letter at the origin of the set for the
-        // column
+        // colOrigin is the letter at the origin of the set for the column.
         $curCol = substr(static::SET_ORIGIN_COLUMN_LETTERS, $set - 1, 1);
         $eastingValue = 100000.0;
         $rewindMarker = false;
@@ -701,7 +464,6 @@ class Mgrs extends Utm
         return $eastingValue;
     }
 
-
     /**
      * Given the second letter from a two-letter MGRS 100k zone, and given the
      * MGRS table set for the zone number, figure out the northing value that
@@ -725,8 +487,7 @@ class Mgrs extends Utm
             throw new \Exception("MGRSPoint given invalid Northing " . $n);
         }
 
-        // rowOrigin is the letter at the origin of the set for the
-        // column
+        // rowOrigin is the letter at the origin of the set for the column.
         $curRow = ord(substr(static::SET_ORIGIN_ROW_LETTERS, $set - 1, 1));
         $northingValue = 0.0;
         $rewindMarker = false;
@@ -760,8 +521,7 @@ class Mgrs extends Utm
 
 
     /**
-     * The function getMinNorthing returns the minimum northing value of a MGRS
-     * zone.
+     * The function getMinNorthing returns the minimum northing value of a MGRS zone.
      *
      * Ported from Geotrans' c Lattitude_Band_Value structure table.
      *
@@ -770,79 +530,13 @@ class Mgrs extends Utm
      * @return {number}
      */
 
-    protected function getMinNorthing($zoneLetter)
+    protected static function getMinNorthing($zone_letter)
     {
-        //var northing;
-        switch ($zoneLetter) {
-            case 'C':
-                $northing = 1100000.0;
-                break;
-            case 'D':
-                $northing = 2000000.0;
-                break;
-            case 'E':
-                $northing = 2800000.0;
-                break;
-            case 'F':
-                $northing = 3700000.0;
-                break;
-            case 'G':
-                $northing = 4600000.0;
-                break;
-            case 'H':
-                $northing = 5500000.0;
-                break;
-            case 'J':
-                $northing = 6400000.0;
-                break;
-            case 'K':
-                $northing = 7300000.0;
-                break;
-            case 'L':
-                $northing = 8200000.0;
-                break;
-            case 'M':
-                $northing = 9100000.0;
-                break;
-            case 'N':
-                $northing = 0.0;
-                break;
-            case 'P':
-                $northing = 800000.0;
-                break;
-            case 'Q':
-                $northing = 1700000.0;
-                break;
-            case 'R':
-                $northing = 2600000.0;
-                break;
-            case 'S':
-                $northing = 3500000.0;
-                break;
-            case 'T':
-                $northing = 4400000.0;
-                break;
-            case 'U':
-                $northing = 5300000.0;
-                break;
-            case 'V':
-                $northing = 6200000.0;
-                break;
-            case 'W':
-                $northing = 7000000.0;
-                break;
-            case 'X':
-                $northing = 7900000.0;
-                break;
-            default:
-                $northing = -1.0;
+        if (isset(static::$zone_min_northing[$zone_letter])) {
+            return static::$zone_min_northing[$zone_letter];
         }
 
-        if ($northing >= 0.0) {
-            return $northing;
-        } else {
-            throw new \Exception("Invalid zone letter: " . $zoneLetter);
-        }
+        throw new \Exception("Invalid zone letter: " . $zone_letter);
     }
 }
 

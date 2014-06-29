@@ -13,10 +13,10 @@ class Utm
      * The parts of a UTM coordinate.
      */
 
-    public $northing;
-    public $easting;
-    public $zone_number;
-    public $zone_letter;
+    protected $northing;
+    protected $easting;
+    protected $zone_number;
+    protected $zone_letter;
 
     // Equatorial radius, GRS80 ellipsoid (meters).
     protected static $a = 6378137.0;
@@ -28,6 +28,20 @@ class Utm
     protected static $ecc_squared = 0.006694380023;
 
     /**
+     * The maximum accuracy allowed.
+     */
+
+    const MAX_ACCURACY = 5;
+
+    /**
+     * The letter designator range from latitude -80 to 84
+     * A, B, Y and Z are handled as an exception.
+     * I and O are skipped to avoid ambiguity.
+     */
+
+    const LETTER_DESIGNATORS = 'CDEFGHJKLMNPQRSTUVWX';
+
+    /**
      * The default number of digits to use in output formatting.
      * The value is the number of digits used, ranging from 0 to 5.
      * 5 is an accuracy of 1m, 4 is 10m, 3 is 100m and so on.
@@ -37,19 +51,42 @@ class Utm
 
     /**
      * Constructor.
-     * TODO: also accept an array, maybe even a lat/long object.
+     * @todo Also accept an array, maybe even a lat/long object (that would need converting).
+     * @todo Validate values.
      */
     public function __construct($northing, $easting, $zone_number, $zone_letter)
     {
+        // TODO: more validation here to make sure everything is set and within range.
+
         $this->northing = $northing;
         $this->easting = $easting;
         $this->zone_number = $zone_number;
         $this->zone_letter = $zone_letter;
     }
 
+    public function getNorthing()
+    {
+        return $this->northing;
+    }
+
+    public function getEasting()
+    {
+        return $this->easting;
+    }
+
+    public function getZoneNumber()
+    {
+        return $this->zone_number;
+    }
+
+    public function getZoneLetter()
+    {
+        return $this->zone_letter;
+    }
+
     /**
      * Convert from Lat/Long.
-     * Returns a Utm object, either a new object or the current object, depending
+     * Returns a new Utm object, either a new object or the current object, depending
      * on whether called staticly or not.
      */
     public static function fromLatLong($latitude, $longitude = null)
@@ -58,20 +95,32 @@ class Utm
 
         if ( ! isset($longitude)) {
             // One parameter only supplied
-            // TODO: this could be an array with numeric or names keys, or an object.
-            // ...
+
+            if ( ! is_a($latitude, 'Academe\\Proj4Php\\Mgrs\\LatLongInterface')) {
+                // If some form of array, then let LatLong work out how to interpret it.
+                $latitude = new LatLong($latitude);
+            }
+
+            if (is_a($latitude, 'Academe\\Proj4Php\\Mgrs\\LatLongInterface')) {
+                $lat = $latitude->getLatitude();
+                $long = $latitude->getLongitude();
+            } else {
+                // TODO: Exception here.
+            }
         } else {
             // Coordinates supplied as separate values.
             $lat = $latitude;
             $long = $longitude;
         }
 
+        // TODO: validate lat and long ranges, assuming they have been set, and throw exception if necessary.
+
         // Convert to radians. (too early - do this later)
         $lat_rad = deg2rad($lat);
         $long_rad = deg2rad($long);
 
         // Calculate the zone number.
-        $zone_number = static::getZoneNumber($lat, $long);
+        $zone_number = static::calcZoneNumber($lat, $long);
 
         // +3 puts origin in middle of zone
         $long_origin = ($zone_number - 1) * 6 - 180 + 3;
@@ -105,32 +154,18 @@ class Utm
         $zone_number = $zone_number;
         $zone_letter = static::getLetterDesignator($lat);
 
-        if ( isset($this) && get_class($this) == __CLASS__) {
-            // Not static - set the current object values.
-
-            // Maybe controversial - should this be trunacted and not rounded?
-            $this->northing = $northing;
-            $this->easting = $easting;
-            $this->zone_number = $zone_number;
-            $this->zone_letter = $zone_letter;
-
-            return $this;
-        } else {
-            // Called statically. Instantiate a new object.
-
-            return new static(
-                $northing,
-                $easting,
-                $zone_number,
-                $zone_letter
-            );
-        }
+        return new static(
+            $northing,
+            $easting,
+            $zone_number,
+            $zone_letter
+        );
     }
 
     /**
      * Get the zone number for a lat/long
      */
-    public static function getZoneNumber($lat, $long)
+    public static function calcZoneNumber($lat, $long)
     {
         // Convert 0 to 360 to -180 to +180
         // Might just replace this with an if-statement, as that would be clearer.
@@ -169,13 +204,16 @@ class Utm
      * Calculates the MGRS letter designator for the given latitude.
      *
      * @private
-     * @param {number} lat The latitude in WGS84 to get the letter designator
-     *     for.
+     * @param {number} lat The latitude in WGS84 to get the letter designator for.
      * @return {char} The letter designator.
      */
     protected static function getLetterDesignator($lat)
     {
         // I'm sure we can turn this into a simple formula, perhaps with a string lookup.
+        // It basically splits the latitudes into 8 degree bands, and leaves out O and I in
+        // the lettering sequence.
+        // Note that A, B, Y and Z *do* exist, and cover an East or West half of each pole.
+
         if ((84 >= $lat) && ($lat >= 72)) {
             $letter_designator = 'X';
         } else if ((72 > $lat) && ($lat >= 64)) {
@@ -218,7 +256,8 @@ class Utm
             $letter_designator = 'C';
         } else {
             // This is here as an error flag to show that the Latitude is
-            // outside MGRS limits
+            // outside MGRS limits.
+            // We might just want to throw an exception here instead.
 
             $letter_designator = 'Z';
         }
@@ -243,10 +282,10 @@ class Utm
      */
     public function toLatLong()
     {
-        $utm_northing = $this->northing;
-        $utm_easting = $this->easting;
-        $zone_letter = $this->zone_letter;
-        $zone_number = $this->zone_number;
+        $utm_northing = $this->getNorthing();
+        $utm_easting = $this->getEasting();
+        $zone_letter = $this->getZoneLetter();
+        $zone_number = $this->getZoneNumber();
 
         // Check the ZoneNummber is valid.
         // CHECKME: do we want to raise an exception?
@@ -297,11 +336,9 @@ class Utm
 
         // Returning a LatLong object.
 
-        $result = new LatLong();
-        $result->setLatitude($lat);
-        $result->setLongitude($long);
+        $lat_long = new LatLong($lat, $long);
 
-        return $result;
+        return $lat_long;
     }
 
     /**
@@ -309,12 +346,8 @@ class Utm
      */
     public function toSquare($accuracy = null)
     {
-        // Get the lat/long coordinates - the bottom left corner of the square.
-        $lat_long = $this->toLatLong();
-
-        // TODO: we need a Square object that can manage the bounds.
-        // Maybe it just has two LatLong classes injected?
-        $result = new \stdClass();
+        // The top-right of the square is the bottom left with an appropriate number
+        // of metres added.
 
         $top_right = new static(
             $this->northing + $this->getSize($accuracy),
@@ -323,14 +356,14 @@ class Utm
             $this->zone_letter
         );
 
-        $top_right_lat_long = $top_right->toLatLong();
+        // Return the Sqaure, with the two corners set.
 
-        $result->top = $top_right_lat_long->getLatitude();
-        $result->right = $top_right_lat_long->getLongitude();
-        $result->bottom = $lat_long->getLatitude();
-        $result->left = $lat_long->getLongitude();
+        $square = new Square(
+            $this->toLatLong(),
+            $top_right->toLatLong()
+        );
 
-        return $result;
+        return $square;
     }
 
     /**
@@ -344,7 +377,51 @@ class Utm
         }
 
         // The size of the square is 1m for an accuracy of 5 (10^0)
-        return pow(10, 5 - $accuracy);
+        return pow(10, static::MAX_ACCURACY - $accuracy);
+    }
+
+    /**
+     * Set the number of digits to be used by default for output (0 to 5).
+     */
+
+    public function setAccuracy($accuracy)
+    {
+        // Must be an integer.
+        if ( ! is_int($accuracy)) {
+            throw new \InvalidArgumentException(
+                sprintf('Accuracy must be an integer; %s passed in', gettype($accuracy))
+            );
+        }
+
+        // Pull the values into the allowed bounds.
+        if ($accuracy < 0) $accuracy = 0;
+        if ($accuracy > static::MAX_ACCURACY) $accuracy = static::MAX_ACCURACY;
+
+        $this->accuracy = $accuracy;
+    }
+
+    /**
+     * Format the coordinate as a UTM string.
+     * We will be using the full lettering rather than the N/S denotion (though it
+     * may be useful to make that an option).
+     * @todo Make this template-driven, so it can be tweaked. The N/S vs letter designation can be used as needed.
+     */
+    public function format()
+    {
+        return $this->zone_number
+            . $this->zone_letter
+            . ' '
+            . $this->easting
+            . ' '
+            . $this->northing;
+    }
+
+    /**
+     * Default cast to string.
+     */
+    public function __toString()
+    {
+        return $this->format();
     }
 }
 
