@@ -18,6 +18,10 @@ class Utm
     protected $zone_number;
     protected $zone_letter;
 
+    /**
+     * Constants for converting between ellipsoids.
+     */
+
     // Equatorial radius, GRS80 ellipsoid (meters).
     protected static $a = 6378137.0;
 
@@ -28,7 +32,7 @@ class Utm
     protected static $ecc_squared = 0.006694380023;
 
     /**
-     * The maximum accuracy allowed.
+     * The maximum accuracy value allowed.
      */
 
     const MAX_ACCURACY = 5;
@@ -42,27 +46,28 @@ class Utm
     const LETTER_DESIGNATORS = 'CDEFGHJKLMNPQRSTUVWX';
 
     /**
-     * The default number of digits to use in output formatting.
+     * The current number of digits to use in output formatting.
      * The value is the number of digits used, ranging from 0 to 5.
-     * 5 is an accuracy of 1m, 4 is 10m, 3 is 100m and so on.
+     * 5=1m 4=10m 3=100m 2=1km 1=10km 0=100km
      */
 
-    protected $accuracy = 5;
+    protected $accuracy = 5; // static::MAX_ACCURACY
 
     /**
      * Constructor.
-     * @todo Also accept an array, maybe even a lat/long object (that would need converting).
      * @todo Validate values.
      */
     public function __construct($northing, $easting, $zone_number, $zone_letter)
     {
-        // TODO: more validation here to make sure everything is set and within range.
-
         $this->northing = $northing;
         $this->easting = $easting;
         $this->zone_number = $zone_number;
         $this->zone_letter = $zone_letter;
     }
+
+    /**
+     * Get the current value elements.
+     */
 
     public function getNorthing()
     {
@@ -84,29 +89,30 @@ class Utm
         return $this->zone_letter;
     }
 
+    public function getAccuracy()
+    {
+        return $this->accuracy;
+    }
+
     /**
-     * Convert from Lat/Long.
-     * Returns a new Utm object, either a new object or the current object, depending
-     * on whether called staticly or not.
+     * Instantiate a Utm onject from Lat/Long coordinates or a LatLong object.
+     * Returns a new Utm object.
      */
     public static function fromLatLong($latitude, $longitude = null)
     {
         // Accept various inputs.
 
         if ( ! isset($longitude)) {
-            // One parameter only supplied
+            // One parameter only supplied. If this is not already a LatLong object,
+            // then convert it into one.
 
             if ( ! is_a($latitude, 'Academe\\Proj4Php\\Mgrs\\LatLongInterface')) {
                 // If some form of array, then let LatLong work out how to interpret it.
                 $latitude = new LatLong($latitude);
             }
 
-            if (is_a($latitude, 'Academe\\Proj4Php\\Mgrs\\LatLongInterface')) {
-                $lat = $latitude->getLatitude();
-                $long = $latitude->getLongitude();
-            } else {
-                // TODO: Exception here.
-            }
+            $lat = $latitude->getLatitude();
+            $long = $latitude->getLongitude();
         } else {
             // Coordinates supplied as separate values.
             $lat = $latitude;
@@ -114,8 +120,16 @@ class Utm
         }
 
         // TODO: validate lat and long ranges, assuming they have been set, and throw exception if necessary.
+        /*
+        if (...) {
+            // Exception here.
+            throw new \InvalidArgumentException(
+                'error...'
+            );
+        );
+        */
 
-        // Convert to radians. (too early - do this later)
+        // Convert to radians.
         $lat_rad = deg2rad($lat);
         $long_rad = deg2rad($long);
 
@@ -152,7 +166,9 @@ class Utm
         $northing = round($utm_northing);
         $easting = round($utm_easting);
         $zone_number = $zone_number;
-        $zone_letter = static::getLetterDesignator($lat);
+        $zone_letter = static::calcLetterDesignator($lat);
+
+        // Return a new object instatiation.
 
         return new static(
             $northing,
@@ -163,36 +179,36 @@ class Utm
     }
 
     /**
-     * Get the zone number for a lat/long
+     * Calculate the zone number for a lat/long pair.
      */
-    public static function calcZoneNumber($lat, $long)
+    public static function calcZoneNumber($latitude, $longitude)
     {
         // Convert 0 to 360 to -180 to +180
         // Might just replace this with an if-statement, as that would be clearer.
-        $long = ($long + 180) - floor(($long + 180) / 360) * 360 - 180;
+        $longitude = ($longitude + 180) - floor(($longitude + 180) / 360) * 360 - 180;
 
         // The basic zone number, before exceptions.
-        $zone_number = floor(($long + 180) / 6) + 1;
+        $zone_number = floor(($longitude + 180) / 6) + 1;
 
         // Make sure the longitude 180.00 is in Zone 60
-        if ($long === 180) {
+        if ($longitude === 180) {
             $zone_number = 60;
         }
 
         // Special zone for Norway.
-        if ($lat >= 56.0 && $lat < 64.0 && $long >= 3.0 && $long < 12.0) {
+        if ($latitude >= 56.0 && $latitude < 64.0 && $longitude >= 3.0 && $longitude < 12.0) {
             $zone_number = 32;
         }
 
         // Special zones for Svalbard.
-        if ($lat >= 72.0 && $lat < 84.0) {
-            if ($long >= 0.0 && $long < 9.0) {
+        if ($latitude >= 72.0 && $latitude < 84.0) {
+            if ($longitude >= 0.0 && $longitude < 9.0) {
                 $zone_number = 31;
-            } else if ($long >= 9.0 && $long < 21.0) {
+            } else if ($longitude >= 9.0 && $longitude < 21.0) {
                 $zone_number = 33;
-            } else if ($long >= 21.0 && $long < 33.0) {
+            } else if ($longitude >= 21.0 && $longitude < 33.0) {
                 $zone_number = 35;
-            } else if ($long >= 33.0 && $long < 42.0) {
+            } else if ($longitude >= 33.0 && $longitude < 42.0) {
                 $zone_number = 37;
             }
         }
@@ -201,58 +217,58 @@ class Utm
     }
 
     /**
-     * Calculates the MGRS letter designator for the given latitude.
+     * Calculate the MGRS letter designator for the given latitude.
      *
      * @private
      * @param {number} lat The latitude in WGS84 to get the letter designator for.
      * @return {char} The letter designator.
      */
-    protected static function getLetterDesignator($lat)
+    protected static function calcLetterDesignator($latitude)
     {
         // I'm sure we can turn this into a simple formula, perhaps with a string lookup.
         // It basically splits the latitudes into 8 degree bands, and leaves out O and I in
         // the lettering sequence.
         // Note that A, B, Y and Z *do* exist, and cover an East or West half of each pole.
 
-        if ((84 >= $lat) && ($lat >= 72)) {
+        if ((84 >= $latitude) && ($latitude >= 72)) {
             $letter_designator = 'X';
-        } else if ((72 > $lat) && ($lat >= 64)) {
+        } else if ((72 > $latitude) && ($latitude >= 64)) {
             $letter_designator = 'W';
-        } else if ((64 > $lat) && ($lat >= 56)) {
+        } else if ((64 > $latitude) && ($latitude >= 56)) {
             $letter_designator = 'V';
-        } else if ((56 > $lat) && ($lat >= 48)) {
+        } else if ((56 > $latitude) && ($latitude >= 48)) {
             $letter_designator = 'U';
-        } else if ((48 > $lat) && ($lat >= 40)) {
+        } else if ((48 > $latitude) && ($latitude >= 40)) {
             $letter_designator = 'T';
-        } else if ((40 > $lat) && ($lat >= 32)) {
+        } else if ((40 > $latitude) && ($latitude >= 32)) {
             $letter_designator = 'S';
-        } else if ((32 > $lat) && ($lat >= 24)) {
+        } else if ((32 > $latitude) && ($latitude >= 24)) {
             $letter_designator = 'R';
-        } else if ((24 > $lat) && ($lat >= 16)) {
+        } else if ((24 > $latitude) && ($latitude >= 16)) {
             $letter_designator = 'Q';
-        } else if ((16 > $lat) && ($lat >= 8)) {
+        } else if ((16 > $latitude) && ($latitude >= 8)) {
             $letter_designator = 'P';
-        } else if ((8 > $lat) && ($lat >= 0)) {
+        } else if ((8 > $latitude) && ($latitude >= 0)) {
             $letter_designator = 'N';
-        } else if ((0 > $lat) && ($lat >= -8)) {
+        } else if ((0 > $latitude) && ($latitude >= -8)) {
             $letter_designator = 'M';
-        } else if ((-8 > $lat) && ($lat >= -16)) {
+        } else if ((-8 > $latitude) && ($latitude >= -16)) {
             $letter_designator = 'L';
-        } else if ((-16 > $lat) && ($lat >= -24)) {
+        } else if ((-16 > $latitude) && ($latitude >= -24)) {
             $letter_designator = 'K';
-        } else if ((-24 > $lat) && ($lat >= -32)) {
+        } else if ((-24 > $latitude) && ($latitude >= -32)) {
             $letter_designator = 'J';
-        } else if ((-32 > $lat) && ($lat >= -40)) {
+        } else if ((-32 > $latitude) && ($latitude >= -40)) {
             $letter_designator = 'H';
-        } else if ((-40 > $lat) && ($lat >= -48)) {
+        } else if ((-40 > $latitude) && ($latitude >= -48)) {
             $letter_designator = 'G';
-        } else if ((-48 > $lat) && ($lat >= -56)) {
+        } else if ((-48 > $latitude) && ($latitude >= -56)) {
             $letter_designator = 'F';
-        } else if ((-56 > $lat) && ($lat >= -64)) {
+        } else if ((-56 > $latitude) && ($latitude >= -64)) {
             $letter_designator = 'E';
-        } else if ((-64 > $lat) && ($lat >= -72)) {
+        } else if ((-64 > $latitude) && ($latitude >= -72)) {
             $letter_designator = 'D';
-        } else if ((-72 > $lat) && ($lat >= -80)) {
+        } else if ((-72 > $latitude) && ($latitude >= -80)) {
             $letter_designator = 'C';
         } else {
             // This is here as an error flag to show that the Latitude is
@@ -282,13 +298,12 @@ class Utm
      */
     public function toLatLong()
     {
-        $utm_northing = $this->getNorthing();
-        $utm_easting = $this->getEasting();
         $zone_letter = $this->getZoneLetter();
         $zone_number = $this->getZoneNumber();
 
         // Check the ZoneNummber is valid.
         // CHECKME: do we want to raise an exception?
+
         if ($zone_number < 0 || $zone_number > 60) {
             return null;
         }
@@ -296,8 +311,8 @@ class Utm
         $e1 = (1 - sqrt(1 - static::$ecc_squared)) / (1 + sqrt(1 - static::$ecc_squared));
 
         // Remove 500,000 meter offset for longitude
-        $x = $utm_easting - 500000.0;
-        $y = $utm_northing;
+        $x = $this->getEasting() - 500000.0;
+        $y = $this->getNorthing();
 
         // We must know somehow if we are in the Northern or Southern
         // hemisphere, this is the only time we use the letter So even
@@ -311,28 +326,27 @@ class Utm
 
         // There are 60 zones with zone 1 being at West -180 to -174
         // +3 puts origin in middle of zone.
-        $LongOrigin = ($zone_number - 1) * 6 - 180 + 3; 
+        $long_origin = ($zone_number - 1) * 6 - 180 + 3; 
 
-        $eccPrimeSquared = (static::$ecc_squared) / (1 - static::$ecc_squared);
+        $ecc_prime_squared = (static::$ecc_squared) / (1 - static::$ecc_squared);
 
         $M = $y / static::$k0;
         $mu = $M / (static::$a * (1 - static::$ecc_squared / 4 - 3 * pow(static::$ecc_squared, 2) / 64 - 5 * pow(static::$ecc_squared, 3) / 256));
 
-        $phi1Rad = $mu + (3 * $e1 / 2 - 27 * pow($e1, 3) / 32) * sin(2 * $mu) + (21 * pow($e1, 2) / 16 - 55 * pow($e1, 4) / 32) * sin(4 * $mu) + (151 * pow($e1, 3) / 96) * sin(6 * $mu);
-        // double phi1 = ProjMath.radToDeg(phi1Rad);
+        $phi1_rad = $mu + (3 * $e1 / 2 - 27 * pow($e1, 3) / 32) * sin(2 * $mu) + (21 * pow($e1, 2) / 16 - 55 * pow($e1, 4) / 32) * sin(4 * $mu) + (151 * pow($e1, 3) / 96) * sin(6 * $mu);
 
-        $N1 = static::$a / sqrt(1 - static::$ecc_squared * pow(sin($phi1Rad), 2));
-        $T1 = pow(tan($phi1Rad), 2);
-        $C1 = $eccPrimeSquared * pow(cos($phi1Rad), 2);
-        $R1 = static::$a * (1 - static::$ecc_squared) / pow(1 - static::$ecc_squared * pow(sin($phi1Rad), 2), 1.5);
+        $N1 = static::$a / sqrt(1 - static::$ecc_squared * pow(sin($phi1_rad), 2));
+        $T1 = pow(tan($phi1_rad), 2);
+        $C1 = $ecc_prime_squared * pow(cos($phi1_rad), 2);
+        $R1 = static::$a * (1 - static::$ecc_squared) / pow(1 - static::$ecc_squared * pow(sin($phi1_rad), 2), 1.5);
         $D = $x / ($N1 * static::$k0);
 
-        $lat = $phi1Rad
-            - ($N1 * tan($phi1Rad) / $R1) * (pow($D, 2) / 2 - (5 + 3 * $T1 + 10 * $C1 - 4 * $C1 * $C1 - 9 * $eccPrimeSquared) * pow($D, 4) / 24 + (61 + 90 * $T1 + 298 * $C1 + 45 * pow($T1, 2) - 252 * $eccPrimeSquared - 3 * pow($C1, 2)) * pow($D, 6) / 720);
+        $lat = $phi1_rad
+            - ($N1 * tan($phi1_rad) / $R1) * (pow($D, 2) / 2 - (5 + 3 * $T1 + 10 * $C1 - 4 * $C1 * $C1 - 9 * $ecc_prime_squared) * pow($D, 4) / 24 + (61 + 90 * $T1 + 298 * $C1 + 45 * pow($T1, 2) - 252 * $ecc_prime_squared - 3 * pow($C1, 2)) * pow($D, 6) / 720);
         $lat = rad2deg($lat);
 
-        $long = ($D - (1 + 2 * $T1 + $C1) * pow($D, 3) / 6 + (5 - 2 * $C1 + 28 * $T1 - 3 * $C1 * $C1 + 8 * $eccPrimeSquared + 24 * $T1 * $T1) * pow($D, 5) / 120) / cos($phi1Rad);
-        $long = $LongOrigin + rad2deg($long);
+        $long = ($D - (1 + 2 * $T1 + $C1) * pow($D, 3) / 6 + (5 - 2 * $C1 + 28 * $T1 - 3 * $C1 * $C1 + 8 * $ecc_prime_squared + 24 * $T1 * $T1) * pow($D, 5) / 120) / cos($phi1_rad);
+        $long = $long_origin + rad2deg($long);
 
         // Returning a LatLong object.
 
@@ -342,7 +356,7 @@ class Utm
     }
 
     /**
-     * The square bounded by the accuracy.
+     * Return as the square bounded by the current, or the given accuracy.
      */
     public function toSquare($accuracy = null)
     {
@@ -350,10 +364,10 @@ class Utm
         // of metres added.
 
         $top_right = new static(
-            $this->northing + $this->getSize($accuracy),
-            $this->easting + $this->getSize($accuracy),
-            $this->zone_number,
-            $this->zone_letter
+            $this->getNorthing() + $this->getSize($accuracy),
+            $this->getEasting() + $this->getSize($accuracy),
+            $this->getZoneNumber(),
+            $this->getZoneLetter()
         );
 
         // Return the Sqaure, with the two corners set.

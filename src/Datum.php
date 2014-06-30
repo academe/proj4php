@@ -25,7 +25,7 @@ class Datum {
         $this->datum_type = Proj4php::$common->PJD_WGS84;   //default setting
 
         if( isset($proj->datumCode) && $proj->datumCode == 'none' ) {
-            $this->datum_type = Proj4php::$common->PJD_NODATUM;
+            $this->datum_type = Proj4Php::$common->PJD_NODATUM;
         }
 
         if( isset( $proj->datum_params ) ) {
@@ -147,7 +147,6 @@ class Datum {
         return $Error_Code;
     }
 
-    
     /**
      *
      * @param object $p
@@ -155,8 +154,8 @@ class Datum {
      */
     public function geocentric_to_geodetic($p)
     {
-        /* local defintions and variables */
-        /* end-criterium of loop, accuracy of sin(Latitude) */
+        // local defintions and variables
+        // end-criterium of loop, accuracy of sin(Latitude)
         $genau = 1.E-12;
         $genau2 = ($genau * $genau);
         $maxiter = 30;
@@ -188,14 +187,14 @@ class Datum {
         $P = sqrt( $X * $X + $Y * $Y );
         $RR = sqrt( $X * $X + $Y * $Y + $Z * $Z );
 
-        /*      special cases for latitude and longitude */
+        // special cases for latitude and longitude
         if ($P / $this->a < $genau) {
-            /*  special case, if P=0. (X=0., Y=0.) */
+            // special case, if P=0. (X=0., Y=0.)
             $At_Pole = true;
             $Longitude = 0.0;
 
-            /*  if (X,Y,Z)=(0.,0.,0.) then Height becomes semi-minor axis
-             *  of ellipsoid (=center of mass), Latitude becomes PI/2 */
+            // if (X,Y,Z)=(0.,0.,0.) then Height becomes semi-minor axis
+            // of ellipsoid (=center of mass), Latitude becomes PI/2
             if ( $RR / $this->a < $genau) {
                 $Latitude = Proj4php::$common->HALF_PI;
                 $Height = -$this->b;
@@ -223,8 +222,8 @@ class Datum {
         $SPHI0 = $CT * $RX;
         $iter = 0;
 
-        /* loop to find sin(Latitude) res$p-> Latitude
-         * until |sin(Latitude(iter)-Latitude(iter-1))| < genau */
+        // loop to find sin(Latitude) res$p-> Latitude
+        // until |sin(Latitude(iter)-Latitude(iter-1))| < genau
         do {
             ++$iter;
             $RN = $this->a / sqrt( 1.0 - $this->es * $SPHI0 * $SPHI0 );
@@ -241,7 +240,7 @@ class Datum {
             $SPHI0 = $SPHI;
         } while ($SDPHI * $SDPHI > $genau2 && $iter < $maxiter);
 
-        /*      ellipsoidal (geodetic) latitude */
+        // ellipsoidal (geodetic) latitude
         $Latitude = atan( $SPHI / abs( $CPHI ) );
 
         $p->x = $Longitude;
@@ -281,8 +280,9 @@ class Datum {
         $Sum;      // numerator of cos(phi1) 
         $At_Pole;  // indicates location is in polar region 
         */
-        
-        $X = floatval($p->x);  // cast from string to float
+
+        // cast from string to float
+        $X = floatval($p->x);
         $Y = floatval($p->y);
         $Z = floatval($p->z ? $p->z : 0);
 

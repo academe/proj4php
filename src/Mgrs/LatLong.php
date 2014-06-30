@@ -87,10 +87,12 @@ class LatLong implements LatLongInterface
 
     /**
      * Constructor to set values.
+     * @todo Do we want to support named element keys, e.g. 'lat' and 'lon'?
      */
     public function __construct($latitude, $longitude = null)
     {
         if ( ! isset($longitude) && is_array($latitude) && count($latitude) == 2) {
+            // The order of the elements is latitude then longitude.
             list($lat, $long) = array_values($latitude);
             $this->setLatitude($lat);
             $this->setLongitude($long);

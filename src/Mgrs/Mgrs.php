@@ -115,6 +115,9 @@ class Mgrs extends Utm
      * Convert an MGRS coordinate reference string to a LatLong coordinate.
      * The point is the centre of the square, according to the accuracy that the
      * reference carries (the number of digits it uses).
+     *
+     * FIXME: to be consistent with LatLong, the toWhatever() methods all need to
+     * operate on the current object and not a passed-in object.
      */
     public static function toPoint($mgrs_string)
     {
@@ -137,6 +140,8 @@ class Mgrs extends Utm
      * @param {number} accuracy Accuracy in digits (1-5).
      * @return {string} MGRS string for the given UTM location.
      * @todo Test this on easting/northing strings that are less than 5 digits long.
+     * @todo This is actually a format() method and should be public and should operate
+     * on the current object.
      */
     protected static function encode($utm, $accuracy)
     {
@@ -286,6 +291,7 @@ class Mgrs extends Utm
      * @param {string} mgrsString an UPPERCASE coordinate string is expected.
      * @return {object} An object literal with easting, northing, zoneLetter,
      *     zoneNumber and accuracy (in meters) properties.
+     * TODO: this is better named fromMgrsRef() and is a factory method.
      */
     protected static function decode($mgrsString)
     {
@@ -405,6 +411,9 @@ class Mgrs extends Utm
      * @param {char} e The first letter from a two-letter MGRS 100´k zone.
      * @param {number} set The MGRS table set for the zone number.
      * @return {number} The easting value for the given letter and set.
+     *
+     * @todo rename getEastingFromLetter() or maybe something to show it is just
+     * looking at the first letter.
      */
 
     protected static function getEastingFromChar($e, $set)
@@ -455,6 +464,8 @@ class Mgrs extends Utm
      * @param {number} set The MGRS table set number, which is dependent on the
      *     UTM zone number.
      * @return {number} The northing value for the given letter and set.
+     *
+     * @todo Better name: use "letter" rather than "char" and show this is just the second letter.
      */
 
     protected function getNorthingFromChar($n, $set)
