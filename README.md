@@ -31,9 +31,23 @@ The Square class holds two LatLong classes to mark the opposite corners of the b
 
 The Utm class holds a UTM coordinate.
 
+    // From base UTM values.
     $utm = new Utm($northing, $easting, $zone_number, $zone_letter);
+    
+    // From latitude/longitude coordinates (WGS84 ellipsoid).
     $utm = Utm::fromLatLong($latitude, $longitude);
     $utm = Utm::fromLatLong($lat_long);
+    
+    // Back to lat/long.
+    $lat_long = $utm->toLatLong();
+    
+    // To a UTM grid reference string.
+    $grid_reference = $utm->toGridReference();
+    $grid_reference = (string)$utm;
+    
+    // To a square, based on the supplied accuracy (0 to 5, default 5).
+    // (Note: the accuracy may be of relevance only to the MTRS grid reference, so may be moved to that class)
+    $square = $utm->toSquare($accuracy);
 
 The Mgrs coordinate extends Utm with its set of reference conversion methods.
 
