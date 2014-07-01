@@ -15,9 +15,69 @@ my learning curve in how the JavaScript library works.
 Mgrs
 ----
 
-In here is a LatLong class that holds a latitude and longitude. The Square class holds two LatLong
-classes to mark the opposite corners of the bounding box. The Utm coordinate can be used by itself.
-The Mgrs coordinate extends Utm with its set of reference conversion methods.
+namespace: Academe\Proj4Php\Mgrs
 
-None of these classes can be created without valid coordinates or references passed in to the
-constructor.
+The LatLong and Square classes implement minimal interfaces to support the UTM and MGRS classes
+as a standalone module (nothing in Academe\Proj4Php\Mgrs depends on anything else). This may change,
+depending on whether Mgrs is split off into a separate library, or coupled more tightly with the
+other coordinate classes on the main Proj4Php library. It will probably depend on inherited licenses.
+
+The LatLong class holds a latitude and longitude.
+
+    $latitude = 53.0;
+    $longitude = -5.5;
+    
+    $lat_long = new LatLong($latitude, $longitude);
+    $lat_long = new LatLong(array($latitude, $longitude));
+
+The Square class holds two LatLong classes to mark the opposite corners of the bounding box.
+
+    $square = new Square($lat_long_bottom_left, $lat_long_top_right);
+
+The Utm class holds a UTM coordinate.
+
+    // From base UTM values.
+    $utm = new Utm($northing, $easting, $zone_number, $zone_letter);
+    
+    // From latitude/longitude coordinates (WGS84 ellipsoid).
+    $utm = Utm::fromLatLong($latitude, $longitude);
+    $utm = Utm::fromLatLong($lat_long);
+    
+    // Back to lat/long.
+    $lat_long = $utm->toLatLong();
+    
+    // To a UTM grid reference string.
+    $grid_reference = $utm->toGridReference();
+    $grid_reference = (string)$utm;
+    
+    // To a square, based on the supplied accuracy (0 to 5, default 5).
+    // (Note: the accuracy may be of relevance only to the MTRS grid reference, so may be moved to that class)
+    $square = $utm->toSquare($accuracy);
+
+The Mgrs class extends Utm with its set of reference conversion methods.
+
+    // Create from bas UTM values.
+    $mgrs = new Mgrs($northing, $easting, $zone_number, $zone_letter);
+    
+    // From lat/long (same as for Utm)
+    $mgrs = Utm::fromLatLong($latitude, $longitude);
+    $mgrs = Utm::fromLatLong($lat_long);
+    
+    // From a MGRS grid reference:
+    $mgrs = Mgrs::fromGridReference($mgrs_grid_reference);
+
+    // To a MGRS grid reference string.
+    // The accuracy is optional 0 to 5, defaulting to 5.
+    $grid_reference = $mgrs->toGridReference($accuracy);
+    
+    // To a single lat/long coordinate.
+    // (Note: this will change - it should drive off the current instantiated object, and
+    // and the accuracy should be an optional parameter, like toSquare())
+    $lat_long = toPoint($mgrs_grid_reference);
+    
+    // To a Square region.
+    // The accuracy is optional 0 to 5, defaulting to 5.
+    $square = toSquare($accuracy);
+    
+    
+Instantiating a Utm, Mgrs, LatLong or Square class always requires a valid coordiate in some form.
