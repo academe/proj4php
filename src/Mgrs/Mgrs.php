@@ -87,13 +87,10 @@ class Mgrs extends Utm
      */
     public static function forward($lat_long, $accuracy = null)
     {
-        // default accuracy 1m
-        $accuracy = $accuracy || static::MAX_ACCURACY;
-
         // This handles $lat_long being in any of a number of different formats.
         $mgrs = static::fromLatLong($lat_long);
 
-        return static::encode($mgrs, $accuracy);
+        return $mgrs->toGridReference($accuracy);
     }
 
     /**
@@ -105,9 +102,10 @@ class Mgrs extends Utm
      *     bounding box for the provided MGRS reference.
      * We actually want to return a Square.
      */
-    public static function inverse($mgrs_string)
+    public static function inverse($mgrs_grid_reference)
     {
-        $mgrs = static::decode(strtoupper($mgrs_string));
+        $mgrs = static::fromGridReference(strtoupper($mgrs_grid_reference));
+
         return $mgrs->toSquare();
     }
 
@@ -140,17 +138,19 @@ class Mgrs extends Utm
      * @param {number} accuracy Accuracy in digits (1-5).
      * @return {string} MGRS string for the given UTM location.
      * @todo Test this on easting/northing strings that are less than 5 digits long.
-     * @todo This is actually a format() method and should be public and should operate
-     * on the current object.
      */
-    protected static function encode($utm, $accuracy)
+    public function toGridReference($accuracy = null)
     {
-        $seasting = (string)$utm->easting;
-        $snorthing = (string)$utm->northing;
+        if ( ! isset($accuracy)) {
+            $accuracy = $this->getAccuracy();
+        }
 
-        return $utm->zone_number
-            . $utm->zone_letter
-            . static::get100kID($utm->easting, $utm->northing, $utm->zone_number)
+        $seasting = (string)$this->getEasting();
+        $snorthing = (string)$this->getNorthing();
+
+        return $this->getZoneNumber()
+            . $this->getZoneLetter()
+            . static::get100kId($this->getEasting(), $this->getNorthing(), $this->getZoneNumber())
             . substr($seasting, strlen($seasting) - static::MAX_ACCURACY, $accuracy)
             . substr($snorthing, strlen($snorthing) - static::MAX_ACCURACY, $accuracy);
     }
@@ -165,12 +165,12 @@ class Mgrs extends Utm
      * @param {number} zoneNumber
      * @return the two letter 100k designator for the given UTM location.
      */
-    protected static function get100kID($easting, $northing, $zoneNumber)
+    protected static function get100kId($easting, $northing, $zone_number)
     {
-        $setParm = static::get100kSetForZone($zoneNumber);
-        $setColumn = floor($easting / 100000);
-        $setRow = floor($northing / 100000) % 20;
-        return static::getLetter100kID($setColumn, $setRow, $setParm);
+        $set_parm = static::get100kSetForZone($zone_number);
+        $set_column = floor($easting / 100000);
+        $set_row = floor($northing / 100000) % 20;
+        return static::getLetter100kId($set_column, $set_row, $set_parm);
     }
 
     /**
@@ -182,13 +182,13 @@ class Mgrs extends Utm
      */
     protected static function get100kSetForZone($i)
     {
-        $setParm = $i % static::NUM_100K_SETS;
+        $set_parm = $i % static::NUM_100K_SETS;
 
-        if ($setParm === 0) {
-            $setParm = static::NUM_100K_SETS;
+        if ($set_parm === 0) {
+            $set_parm = static::NUM_100K_SETS;
         }
 
-        return $setParm;
+        return $set_parm;
     }
 
     /**
@@ -207,7 +207,7 @@ class Mgrs extends Utm
      *        1-60.
      * @return two letter MGRS 100k code.
      */
-    protected function getLetter100kID($column, $row, $parm)
+    protected function getLetter100kId($column, $row, $parm)
     {
         // colOrigin and rowOrigin are the letters at the origin of the set
         $index = $parm - 1;
@@ -282,24 +282,21 @@ class Mgrs extends Utm
         return $twoLetter;
     }
 
-
-
     /**
-     * Decode the UTM parameters from a MGRS string.
+     * Create an Mgrs coordinate from an MGRS grid reference.
      *
-     * @private
+     * @public
      * @param {string} mgrsString an UPPERCASE coordinate string is expected.
      * @return {object} An object literal with easting, northing, zoneLetter,
      *     zoneNumber and accuracy (in meters) properties.
-     * TODO: this is better named fromMgrsRef() and is a factory method.
      */
-    protected static function decode($mgrsString)
+    public static function fromGridReference($mgrs_reference)
     {
-        if ($mgrsString && strlen($mgrsString) === 0) {
+        if ($mgrs_reference && strlen($mgrs_reference) === 0) {
             throw new \Exception("MGRSPoint converting from nothing");
         }
 
-        $length = strlen($mgrsString);
+        $length = strlen($mgrs_reference);
 
         $hunK = null;
         $sb = "";
@@ -313,46 +310,46 @@ class Mgrs extends Utm
         // If there are less than two digits, then it seems to be happy (though
         // en exception is raised later if there are no digits).
 
-        while ( ! preg_match('/[A-Z]/', substr($mgrsString, $i, 1))) {
+        while ( ! preg_match('/[A-Z]/', substr($mgrs_reference, $i, 1))) {
             if ($i >= 2) {
-                throw new \Exception("MGRSPoint bad conversion from: " . $mgrsString);
+                throw new \Exception("MGRSPoint bad conversion from: " . $mgrs_reference);
             }
 
-            $sb .= substr($mgrsString, $i, 1);
+            $sb .= substr($mgrs_reference, $i, 1);
             $i++;
         }
 
         if ($i === 0 || $i + 3 > $length) {
             // A good MGRS string has to be 4-5 digits long,
             // ##AAA/#AAA at least.
-            throw new \Exception("MGRSPoint bad conversion from: " . $mgrsString);
+            throw new \Exception("MGRSPoint bad conversion from: " . $mgrs_reference);
         }
 
-        $zoneNumber = (int)$sb;
+        $zone_number = (int)$sb;
 
-        $zoneLetter = substr($mgrsString, $i, 1);
+        $zone_letter = substr($mgrs_reference, $i, 1);
         $i += 1;
 
         // Should we check the zone letter here? Why not.
         // These are a handful of zone letters that are not allowed.
         // CHECKME: A, B, Y and Z all cover polar regions, so this may not be strictly correct.
         if (
-            $zoneLetter <= 'A'
-            || $zoneLetter === 'B'
-            || $zoneLetter === 'Y'
-            || $zoneLetter >= 'Z'
-            || $zoneLetter === 'I'
-            || $zoneLetter === 'O'
+            $zone_letter <= 'A'
+            || $zone_letter === 'B'
+            || $zone_letter === 'Y'
+            || $zone_letter >= 'Z'
+            || $zone_letter === 'I'
+            || $zone_letter === 'O'
         ) {
-            throw new \Exception("MGRSPoint zone letter " . $zoneLetter . " not handled: " . $mgrsString);
+            throw new \Exception("MGRSPoint zone letter " . $zone_letter . " not handled: " . $mgrs_reference);
         }
 
         // PHP substr functions work differently to JS substring.
         //hunK = mgrsString.substring(i, i += 2);
-        $hunK = substr($mgrsString, $i, 2);
+        $hunK = substr($mgrs_reference, $i, 2);
         $i += 2;
 
-        $set = static::get100kSetForZone($zoneNumber);
+        $set = static::get100kSetForZone($zone_number);
 
         $east100k = static::getEastingFromChar(substr($hunK, 0, 1), $set);
         $north100k = static::getNorthingFromChar(substr($hunK, 1, 1), $set);
@@ -361,7 +358,7 @@ class Mgrs extends Utm
 
         // How do we know when to roll over?
 
-        while ($north100k < static::getMinNorthing($zoneLetter)) {
+        while ($north100k < static::getMinNorthing($zone_letter)) {
             $north100k += 2000000;
         }
 
@@ -370,20 +367,19 @@ class Mgrs extends Utm
 
         // Remaining string must be dividable into two equal halves.
         if ($remainder % 2 !== 0) {
-            throw new \Exception("MGRSPoint has to have an even number \nof digits after the zone letter and two 100km letters - front \nhalf for easting meters, second half for \nnorthing meters" . $mgrsString);
+            throw new \Exception("MGRSPoint has to have an even number \nof digits after the zone letter and two 100km letters - front \nhalf for easting meters, second half for \nnorthing meters" . $mgrs_reference);
         }
 
         $sep = $remainder / 2;
 
         $sepEasting = 0.0;
         $sepNorthing = 0.0;
-        //$accuracyBonus, sepEastingString, sepNorthingString, easting, northing;
 
         if ($sep > 0) {
             $accuracyBonus = 100000.0 / pow(10, $sep);
-            $sepEastingString = substr($mgrsString, $i, $sep);
+            $sepEastingString = substr($mgrs_reference, $i, $sep);
             $sepEasting = (float)$sepEastingString * $accuracyBonus;
-            $sepNorthingString = substr($mgrsString, $i + $sep);
+            $sepNorthingString = substr($mgrs_reference, $i + $sep);
             $sepNorthing = (float)$sepNorthingString * $accuracyBonus;
         }
 
@@ -395,8 +391,8 @@ class Mgrs extends Utm
         $mgrs = new static(
             $easting,
             $northing,
-            $zoneLetter,
-            $zoneNumber
+            $zone_letter,
+            $zone_number
         );
 
         return $mgrs;
