@@ -15,8 +15,26 @@ my learning curve in how the JavaScript library works.
 Mgrs
 ----
 
-In here is a LatLong class that holds a latitude and longitude. The Square class holds two LatLong
-classes to mark the opposite corners of the bounding box. The Utm coordinate can be used by itself.
+namespace: Academe\Proj4Php\Mgrs
+
+The LatLong class holds a latitude and longitude.
+
+    $latitude = 53.0;
+    $longitude = -5.5;
+    
+    $lat_long = new LatLong($latitude, $longitude);
+    $lat_long = new LatLong(array($latitude, $longitude));
+
+The Square class holds two LatLong classes to mark the opposite corners of the bounding box.
+
+    $square = new Square($lat_long_bottom_left, $lat_long_top_right);
+
+The Utm class holds a UTM coordinate.
+
+    $utm = new Utm($northing, $easting, $zone_number, $zone_letter);
+    $utm = Utm::fromLatLong($latitude, $longitude);
+    $utm = Utm::fromLatLong($lat_long);
+
 The Mgrs coordinate extends Utm with its set of reference conversion methods.
 
 None of these classes can be created without valid coordinates or references passed in to the
