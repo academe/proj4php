@@ -17,6 +17,11 @@ Mgrs
 
 namespace: Academe\Proj4Php\Mgrs
 
+The LatLong and Square classes implement minimal interfaces to support the UTM and MGRS classes
+as a standalone module (nothing in Academe\Proj4Php\Mgrs depends on anything else). This may change,
+depending on whether Mgrs is split off into a separate library, or coupled more tightly with the
+other coordinate classes on the main Proj4Php library. It will probably depend on inherited licenses.
+
 The LatLong class holds a latitude and longitude.
 
     $latitude = 53.0;
