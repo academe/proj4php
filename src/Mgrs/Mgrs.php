@@ -10,6 +10,9 @@ namespace Academe\Proj4Php\Mgrs;
  * http://www.luomus.fi/en/utm-mgrs-atlas-florae-europaeae
  * TODO: expose more of the functionality to make MGRS and UTM available formats.
  * TODO: interfaces needed for passing Lat/long, MGRS and UTM objects in and out.
+ * CHECKME: when the accuracy is not maximum (5) then any easting/northing values
+ * looked at must be truncated before converting them to lat/long. Just a hunch that
+ * something is amiss here.
  */
 
 class Mgrs extends Utm
@@ -82,14 +85,13 @@ class Mgrs extends Utm
      * @param {int} accuracy Accuracy in digits (5 for 1 m, 4 for 10 m, 3 for
      *      100 m, 4 for 1000 m or 5 for 10000 m). Optional, default is 5.
      * @return {string} the MGRS string for the given location and accuracy.
-     *
-     * TODO: this should be static if it is doing this full conversion in one step.
      */
     public static function forward($lat_long, $accuracy = null)
     {
         // This handles $lat_long being in any of a number of different formats.
         $mgrs = static::fromLatLong($lat_long);
 
+        // Return the MGRS coordinate as a grid reference.
         return $mgrs->toGridReference($accuracy);
     }
 
@@ -113,13 +115,11 @@ class Mgrs extends Utm
      * Convert an MGRS coordinate reference string to a LatLong coordinate.
      * The point is the centre of the square, according to the accuracy that the
      * reference carries (the number of digits it uses).
-     *
-     * FIXME: to be consistent with LatLong, the toWhatever() methods all need to
-     * operate on the current object and not a passed-in object.
      */
-    public static function toPoint($mgrs_string)
+    public function toPoint($accuracy = null)
     {
-        $lat_long_bounding_box = static::inverse($mgrs_string);
+        // Get the bounding box.
+        $lat_long_bounding_box = $this->toSquare($accuracy);
 
         // Return the centre of the box as a LatLong object.
 
@@ -138,6 +138,11 @@ class Mgrs extends Utm
      * @param {number} accuracy Accuracy in digits (1-5).
      * @return {string} MGRS string for the given UTM location.
      * @todo Test this on easting/northing strings that are less than 5 digits long.
+     * Allowed formats are documented, with examples, here:
+     * http://en.wikipedia.org/wiki/Military_grid_reference_system
+     * There is a format with an accuracy of less then zero (GZD only, precision level 6° × 8°)
+     * and we may need to support that too. Maybe a separate method will do that.
+     * @todo Template this. Some examples show it with spaces, and some compressed without spaces.
      */
     public function toGridReference($accuracy = null)
     {
@@ -289,10 +294,16 @@ class Mgrs extends Utm
      * @param {string} mgrsString an UPPERCASE coordinate string is expected.
      * @return {object} An object literal with easting, northing, zoneLetter,
      *     zoneNumber and accuracy (in meters) properties.
+     * @todo This assumes the grid reference is upper case and contains no spaces.
+     * Fix it so spaces can be included to separate the parts, and clean the data to
+     * upper-case.
      */
     public static function fromGridReference($mgrs_reference)
     {
-        if ($mgrs_reference && strlen($mgrs_reference) === 0) {
+        // TODO: make sure upper-case.
+        // TODO: strip out white space.
+        // TODO: validate it as a string too.
+        if (strlen($mgrs_reference) === 0) {
             throw new \Exception("MGRSPoint converting from nothing");
         }
 

@@ -5,6 +5,7 @@ namespace Academe\Proj4Php\Mgrs;
 /**
  * Universal Transverse Mercator (UTM)
  * Provides conversion to and from Lat/Long, using the WGS84 ellipsoid.
+ * @todo Implement a fromGridReference() supporting UTM grid references.
  */
 
 class Utm
@@ -420,7 +421,7 @@ class Utm
      * may be useful to make that an option).
      * @todo Make this template-driven, so it can be tweaked. The N/S vs letter designation can be used as needed.
      */
-    public function format()
+    public function toGridReference()
     {
         return $this->zone_number
             . $this->zone_letter
@@ -435,7 +436,7 @@ class Utm
      */
     public function __toString()
     {
-        return $this->format();
+        return $this->toGridReference();
     }
 }
 
