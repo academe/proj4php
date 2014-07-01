@@ -77,7 +77,7 @@ The Mgrs class extends Utm with its set of reference conversion methods.
     
     // To a Square region.
     // The accuracy is optional 0 to 5, defaulting to 5.
-    $lat_long = toSquare($accuracy);
+    $square = toSquare($accuracy);
     
     
 None of these classes can be created without valid coordinates or references passed in to the
