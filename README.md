@@ -80,5 +80,4 @@ The Mgrs class extends Utm with its set of reference conversion methods.
     $square = toSquare($accuracy);
     
     
-None of these classes can be created without valid coordinates or references passed in to the
-constructor.
+Instantiating a Utm, Mgrs, LatLong or Square class always requires a valid coordiate in some form.
