@@ -47,13 +47,10 @@ The Utm class holds a UTM coordinate.
     $lat_long = $utm->toLatLong();
     
     // To a UTM grid reference string.
-    $grid_reference = $utm->toGridReference();
+    $grid_reference = $utm->toGridReference(); // '39L 198447 8893330'
     $grid_reference = (string)$utm;
+    $grid_reference = $utm->toGridReference('%z$l%EE%NN'); // '39L0198447E8893330N'
     
-    // To a square, based on the supplied accuracy (0 to 5, default 5).
-    // (Note: the accuracy may be of relevance only to the MTRS grid reference, so may be moved to that class)
-    $square = $utm->toSquare($accuracy);
-
 The Mgrs class extends Utm with its set of reference conversion methods.
 
     // Create from bas UTM values.
@@ -77,7 +74,6 @@ The Mgrs class extends Utm with its set of reference conversion methods.
     
     // To a Square region.
     // The accuracy is optional 0 to 5, defaulting to 5.
-    $square = toSquare($accuracy);
-    
-    
+    $square = $mgrs->toSquare($accuracy);
+
 Instantiating a Utm, Mgrs, LatLong or Square class always requires a valid coordiate in some form.
