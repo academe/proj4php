@@ -47,37 +47,57 @@ The Utm class holds a UTM coordinate.
     $lat_long = $utm->toLatLong();
     
     // To a UTM grid reference string.
-    $grid_reference = $utm->toGridReference();
+    $grid_reference = $utm->toGridReference(); // '39L 198447 8893330'
     $grid_reference = (string)$utm;
-    
-    // To a square, based on the supplied accuracy (0 to 5, default 5).
-    // (Note: the accuracy may be of relevance only to the MTRS grid reference, so may be moved to that class)
-    $square = $utm->toSquare($accuracy);
+    $grid_reference = $utm->toGridReference('%z$l%EE%NN'); // '39L0198447E8893330N'
 
+The UTM grid reference formatting fields are:
+
+* %z Zone number
+* %l Zone letter
+* %h Hemisphere letter (N or S)
+* %e Easting
+* %n Northing
+* %E Easting left-padded to 7 digits
+* %N Northing left-padded to 7 digits
+    
 The Mgrs class extends Utm with its set of reference conversion methods.
 
-    // Create from bas UTM values.
+    // Create from base UTM values.
     $mgrs = new Mgrs($northing, $easting, $zone_number, $zone_letter);
     
     // From lat/long (same as for Utm)
-    $mgrs = Utm::fromLatLong($latitude, $longitude);
-    $mgrs = Utm::fromLatLong($lat_long);
+    $mgrs = Mgrs::fromLatLong($latitude, $longitude);
+    $mgrs = Mgrs::fromLatLong($lat_long);
     
-    // From a MGRS grid reference:
+    // From a MGRS grid reference.
+    // The accuracy of the reference is noted and stored with the reference.
     $mgrs = Mgrs::fromGridReference($mgrs_grid_reference);
 
     // To a MGRS grid reference string.
+    // Template is optional, defaulting to '%z%l%k%e%n'.
     // The accuracy is optional 0 to 5, defaulting to 5.
-    $grid_reference = $mgrs->toGridReference($accuracy);
+    $grid_reference = $mgrs->toGridReference($template, $accuracy);
     
-    // To a single lat/long coordinate.
-    // (Note: this will change - it should drive off the current instantiated object, and
-    // and the accuracy should be an optional parameter, like toSquare())
-    $lat_long = toPoint($mgrs_grid_reference);
+    // To a single lat/long coordinate in the *centre* of the square according to
+    // teh accuracy, to one metre.
+    // $accuracy is optional, and defaults to the accuracy of the current coordinate.
+    $lat_long = $mgrs->toPoint($accuracy);
     
+    // The bottom left coordinate, disregarding the accuracy (like toPoint with the
+    // maximum accuracy of 5).
+    $lat_long = $mgrs->toLatLong();
+
     // To a Square region.
     // The accuracy is optional 0 to 5, defaulting to 5.
-    $square = toSquare($accuracy);
-    
-    
+    $square = $mgrs->toSquare($accuracy);
+
+The MGRS grid reference formatting fields are:
+
+* %z Zone number
+* %l Zone letter
+* %k 100km zone ID (two letters)
+* %e Easting, to the current accuracy
+* %n Northing, to the current accuracy
+
 Instantiating a Utm, Mgrs, LatLong or Square class always requires a valid coordiate in some form.
