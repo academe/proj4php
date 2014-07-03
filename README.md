@@ -63,14 +63,15 @@ The UTM grid reference formatting fields are:
     
 The Mgrs class extends Utm with its set of reference conversion methods.
 
-    // Create from bas UTM values.
+    // Create from base UTM values.
     $mgrs = new Mgrs($northing, $easting, $zone_number, $zone_letter);
     
     // From lat/long (same as for Utm)
-    $mgrs = Utm::fromLatLong($latitude, $longitude);
-    $mgrs = Utm::fromLatLong($lat_long);
+    $mgrs = Mgrs::fromLatLong($latitude, $longitude);
+    $mgrs = Mgrs::fromLatLong($lat_long);
     
-    // From a MGRS grid reference:
+    // From a MGRS grid reference.
+    // The accuracy of the reference is noted and stored with the reference.
     $mgrs = Mgrs::fromGridReference($mgrs_grid_reference);
 
     // To a MGRS grid reference string.
@@ -78,9 +79,8 @@ The Mgrs class extends Utm with its set of reference conversion methods.
     $grid_reference = $mgrs->toGridReference($accuracy);
     
     // To a single lat/long coordinate.
-    // (Note: this will change - it should drive off the current instantiated object, and
-    // and the accuracy should be an optional parameter, like toSquare())
-    $lat_long = toPoint($mgrs_grid_reference);
+    // $accuracy is optional, and defaults to the accuracy of the current coordinate.
+    $lat_long = $mgrs->toPoint($accuracy);
     
     // To a Square region.
     // The accuracy is optional 0 to 5, defaulting to 5.
