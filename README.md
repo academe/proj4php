@@ -50,6 +50,16 @@ The Utm class holds a UTM coordinate.
     $grid_reference = $utm->toGridReference(); // '39L 198447 8893330'
     $grid_reference = (string)$utm;
     $grid_reference = $utm->toGridReference('%z$l%EE%NN'); // '39L0198447E8893330N'
+
+The UTM grid reference formatting fields are:
+
+* %z Zone number
+* %l Zone letter
+* %h Hemisphere letter (N or S)
+* %e Easting
+* %n Northing
+* %E Easting left-padded to 7 digits
+* %N Northing left-padded to 7 digits
     
 The Mgrs class extends Utm with its set of reference conversion methods.
 
