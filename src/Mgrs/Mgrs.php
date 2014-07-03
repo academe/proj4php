@@ -8,8 +8,6 @@ namespace Academe\Proj4Php\Mgrs;
  * http://www.earthpoint.us/convert.aspx
  * Description of the UTM/MGRS grid systems:
  * http://www.luomus.fi/en/utm-mgrs-atlas-florae-europaeae
- * TODO: expose more of the functionality to make MGRS and UTM available formats.
- * TODO: interfaces needed for passing Lat/long, MGRS and UTM objects in and out.
  * CHECKME: when the accuracy is not maximum (5) then any easting/northing values
  * looked at must be truncated before converting them to lat/long. Just a hunch that
  * something is amiss here.
