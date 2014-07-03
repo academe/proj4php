@@ -5,7 +5,10 @@ namespace Academe\Proj4Php\Mgrs;
 /**
  * Universal Transverse Mercator (UTM)
  * Provides conversion to and from Lat/Long, using the WGS84 ellipsoid.
- * @todo Implement a fromGridReference() supporting UTM grid references.
+ * Uses the Transverse Mercator projection.
+ * @todo Implement a fromGridReference() supporting UTM grid references. Note that
+ * many formats are ambiguous, so reference strings will need modifiers to remove
+ * that ambiguity.
  */
 
 class Utm
@@ -33,26 +36,12 @@ class Utm
     protected static $ecc_squared = 0.006694380023;
 
     /**
-     * The maximum accuracy value allowed.
-     */
-
-    const MAX_ACCURACY = 5;
-
-    /**
      * The letter designator range from latitude -80 to 84
      * A, B, Y and Z are handled as an exception.
      * I and O are skipped to avoid ambiguity.
      */
 
     const LETTER_DESIGNATORS = 'CDEFGHJKLMNPQRSTUVWX';
-
-    /**
-     * The current number of digits to use in output formatting.
-     * The value is the number of digits used, ranging from 0 to 5.
-     * 5=1m 4=10m 3=100m 2=1km 1=10km 0=100km
-     */
-
-    protected $accuracy = 5; // static::MAX_ACCURACY
 
     /**
      * Constructor.
@@ -88,11 +77,6 @@ class Utm
     public function getZoneLetter()
     {
         return $this->zone_letter;
-    }
-
-    public function getAccuracy()
-    {
-        return $this->accuracy;
     }
 
     /**
@@ -181,6 +165,8 @@ class Utm
 
     /**
      * Calculate the zone number for a lat/long pair.
+     * The zone number largely identifies the longitude, in 6 degree increments, but
+     * has some exceptions at certain latitudes.
      */
     public static function calcZoneNumber($latitude, $longitude)
     {
@@ -218,11 +204,12 @@ class Utm
     }
 
     /**
-     * Calculate the MGRS letter designator for the given latitude.
+     * Calculate the MGRS letter designator, sometimes know as the row letter, for
+     * the given latitude.
      *
      * @private
-     * @param {number} lat The latitude in WGS84 to get the letter designator for.
-     * @return {char} The letter designator.
+     * @param number latitude The latitude in WGS84 to get the letter designator for.
+     * @return char The letter designator.
      */
     protected static function calcLetterDesignator($latitude)
     {
@@ -230,6 +217,9 @@ class Utm
         // It basically splits the latitudes into 8 degree bands, and leaves out O and I in
         // the lettering sequence.
         // Note that A, B, Y and Z *do* exist, and cover an East or West half of each pole.
+        // But strictly the poles are covered by the Universal Polar Stereograpic (UPS) coordinate
+        // system. This is described well here:
+        // http://therucksack.tripod.com/MiBSAR/LandNav/UTM/UTM.htm
 
         if ((84 >= $latitude) && ($latitude >= 72)) {
             $letter_designator = 'X';
@@ -283,18 +273,22 @@ class Utm
     }
 
     /**
+     * Get the hemisphere indicator - N or S.
+     */
+    protected static function calcHemisphereLetter($northing)
+    {
+        return (ord($northing) >= ord('N') ? 'N' : 'S');
+    }
+
+    /**
      * Converts UTM coords to lat/long, using the WGS84 ellipsoid. This is a convenience
      * class where the Zone can be specified as a single string eg."60N" which
      * is then broken down into the ZoneNumber and ZoneLetter.
      *
      * @private
      * @param {object} utm An object literal with northing, easting, zone_number
-     *     and zone_letter properties. If an optional accuracy property is
-     *     provided (in meters), a bounding box will be returned instead of
-     *     latitude and longitude.
+     *     and zone_letter properties.
      * @return {object} An object literal containing either lat and lon values
-     *     (if no accuracy was provided), or top, right, bottom and left values
-     *     for the bounding box calculated according to the provided accuracy.
      *     Returns null if the conversion failed.
      */
     public function toLatLong()
@@ -357,78 +351,36 @@ class Utm
     }
 
     /**
-     * Return as the square bounded by the current, or the given accuracy.
-     */
-    public function toSquare($accuracy = null)
-    {
-        // The top-right of the square is the bottom left with an appropriate number
-        // of metres added.
-
-        $top_right = new static(
-            $this->getNorthing() + $this->getSize($accuracy),
-            $this->getEasting() + $this->getSize($accuracy),
-            $this->getZoneNumber(),
-            $this->getZoneLetter()
-        );
-
-        // Return the Sqaure, with the two corners set.
-
-        $square = new Square(
-            $this->toLatLong(),
-            $top_right->toLatLong()
-        );
-
-        return $square;
-    }
-
-    /**
-     * Get the size of the square in metres.
-     */
-    public function getSize($accuracy = null)
-    {
-        // Use the current accuracy, if not provided.
-        if ( ! isset($accuracy)) {
-            $accuracy = $this->accuracy;
-        }
-
-        // The size of the square is 1m for an accuracy of 5 (10^0)
-        return pow(10, static::MAX_ACCURACY - $accuracy);
-    }
-
-    /**
-     * Set the number of digits to be used by default for output (0 to 5).
-     */
-
-    public function setAccuracy($accuracy)
-    {
-        // Must be an integer.
-        if ( ! is_int($accuracy)) {
-            throw new \InvalidArgumentException(
-                sprintf('Accuracy must be an integer; %s passed in', gettype($accuracy))
-            );
-        }
-
-        // Pull the values into the allowed bounds.
-        if ($accuracy < 0) $accuracy = 0;
-        if ($accuracy > static::MAX_ACCURACY) $accuracy = static::MAX_ACCURACY;
-
-        $this->accuracy = $accuracy;
-    }
-
-    /**
      * Format the coordinate as a UTM string.
      * We will be using the full lettering rather than the N/S denotion (though it
      * may be useful to make that an option).
-     * @todo Make this template-driven, so it can be tweaked. The N/S vs letter designation can be used as needed.
+     * @param string format Optional template to format the reference.
      */
-    public function toGridReference()
+    public function toGridReference($template = null)
     {
-        return $this->zone_number
-            . $this->zone_letter
-            . ' '
-            . $this->easting
-            . ' '
-            . $this->northing;
+        // Set the default format if not overridden.
+        if ( ! isset($template)) {
+            $template = '%z%l %e %n';
+        }
+
+        // Get the substitution values for the template.
+        $fields = array(
+            '%z' => $this->getZoneNumber(),
+            '%l' => $this->getZoneLetter(),
+
+            // Hemisphere is 'N' or 'S'.
+            '%h' => $this->calcHemisphereLetter($this->getNorthing()),
+
+            // Easting/northing.
+            '%e' => $this->getEasting(),
+            '%n' => $this->getNorthing(),
+
+            // Easting/northing left-padded to 7 digits.
+            '%E' => str_pad($this->getEasting(), 7, '0', \STR_PAD_LEFT),
+            '%N' => str_pad($this->getNorthing(), 7, '0', \STR_PAD_LEFT),
+        );
+
+        return str_replace(array_keys($fields), array_values($fields), $template);
     }
 
     /**

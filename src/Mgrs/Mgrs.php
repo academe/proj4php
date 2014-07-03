@@ -78,6 +78,20 @@ class Mgrs extends Utm
     );
 
     /**
+     * The maximum accuracy value allowed.
+     */
+
+    const MAX_ACCURACY = 5;
+
+    /**
+     * The current number of digits to use in output formatting.
+     * The value is the number of digits used, ranging from 0 to 5.
+     * 5=1m 4=10m 3=100m 2=1km 1=10km 0=100km
+     */
+
+    protected $accuracy = 5; // static::MAX_ACCURACY
+
+    /**
      * Conversion of lat/lon to MGRS reference.
      *
      * @param {object} ll Object literal with lat and lon properties on a
@@ -106,7 +120,7 @@ class Mgrs extends Utm
      */
     public static function inverse($mgrs_grid_reference)
     {
-        $mgrs = static::fromGridReference(strtoupper($mgrs_grid_reference));
+        $mgrs = static::fromGridReference($mgrs_grid_reference);
 
         return $mgrs->toSquare();
     }
@@ -133,19 +147,23 @@ class Mgrs extends Utm
      * Encodes a UTM location as MGRS string.
      *
      * @private
-     * @param {object} utm An object literal with easting, northing,
-     *     zoneLetter, zoneNumber
-     * @param {number} accuracy Accuracy in digits (1-5).
-     * @return {string} MGRS string for the given UTM location.
+     * @param string template Optional; the template to use.
+     * @param number accuracy Optional; Accuracy in digits (1-5); overrides the current accuracy.
+     * @return string MGRS coordinate reference string for the current location.
      * @todo Test this on easting/northing strings that are less than 5 digits long.
      * Allowed formats are documented, with examples, here:
      * http://en.wikipedia.org/wiki/Military_grid_reference_system
      * There is a format with an accuracy of less then zero (GZD only, precision level 6° × 8°)
      * and we may need to support that too. Maybe a separate method will do that.
-     * @todo Template this. Some examples show it with spaces, and some compressed without spaces.
+     * CHECKME: the method interface has been overridden from the parent. We may need to drop $accuracy
+     * to get them consistent again.
      */
-    public function toGridReference($accuracy = null)
+    public function toGridReference($template = null, $accuracy = null)
     {
+        if ( ! isset($template)) {
+            $template = '%z%l%k%e%n';
+        }
+
         if ( ! isset($accuracy)) {
             $accuracy = $this->getAccuracy();
         }
@@ -153,11 +171,86 @@ class Mgrs extends Utm
         $seasting = (string)$this->getEasting();
         $snorthing = (string)$this->getNorthing();
 
-        return $this->getZoneNumber()
-            . $this->getZoneLetter()
-            . static::get100kId($this->getEasting(), $this->getNorthing(), $this->getZoneNumber())
-            . substr($seasting, strlen($seasting) - static::MAX_ACCURACY, $accuracy)
-            . substr($snorthing, strlen($snorthing) - static::MAX_ACCURACY, $accuracy);
+        $fields = array(
+            // The zone number.
+            '%z' => $this->getZoneNumber(),
+
+            // Zone letter (first letter).
+            '%l' => $this->getZoneLetter(),
+
+            // The 100km square ID (two letters).
+            '%k' => static::get100kId($this->getEasting(), $this->getNorthing(), $this->getZoneNumber()),
+
+            // Easting and norning, to the length according to the accuracy.
+            '%e' => substr($seasting, strlen($seasting) - static::MAX_ACCURACY, $accuracy),
+            '%n' => substr($snorthing, strlen($snorthing) - static::MAX_ACCURACY, $accuracy),
+        );
+
+        return trim(str_replace(array_keys($fields), array_values($fields), $template));
+    }
+
+    /**
+     * Return as the square bounded by the current, or the given accuracy.
+     */
+    public function toSquare($accuracy = null)
+    {
+        // The top-right of the square is the bottom left with an appropriate number
+        // of metres added.
+
+        $top_right = new static(
+            $this->getNorthing() + $this->getSize($accuracy),
+            $this->getEasting() + $this->getSize($accuracy),
+            $this->getZoneNumber(),
+            $this->getZoneLetter()
+        );
+
+        // Return the Sqaure, with the two corners set.
+
+        $square = new Square(
+            $this->toLatLong(),
+            $top_right->toLatLong()
+        );
+
+        return $square;
+    }
+
+    /**
+     * Get the size of the square in metres.
+     */
+    public function getSize($accuracy = null)
+    {
+        // Use the current accuracy, if not provided.
+        if ( ! isset($accuracy)) {
+            $accuracy = $this->accuracy;
+        }
+
+        // The size of the square is 1m for an accuracy of 5 (10^0)
+        return pow(10, static::MAX_ACCURACY - $accuracy);
+    }
+
+    /**
+     * Set the number of digits to be used by default for output (0 to 5).
+     */
+
+    public function setAccuracy($accuracy)
+    {
+        // Must be an integer.
+        if ( ! is_int($accuracy)) {
+            throw new \InvalidArgumentException(
+                sprintf('Accuracy must be an integer; %s passed in', gettype($accuracy))
+            );
+        }
+
+        // Pull the values into the allowed bounds.
+        if ($accuracy < 0) $accuracy = 0;
+        if ($accuracy > static::MAX_ACCURACY) $accuracy = static::MAX_ACCURACY;
+
+        $this->accuracy = $accuracy;
+    }
+
+    public function getAccuracy()
+    {
+        return $this->accuracy;
     }
 
     /**
@@ -291,29 +384,33 @@ class Mgrs extends Utm
      * Create an Mgrs coordinate from an MGRS grid reference.
      *
      * @public
-     * @param {string} mgrsString an UPPERCASE coordinate string is expected.
-     * @return {object} An object literal with easting, northing, zoneLetter,
-     *     zoneNumber and accuracy (in meters) properties.
-     * @todo This assumes the grid reference is upper case and contains no spaces.
-     * Fix it so spaces can be included to separate the parts, and clean the data to
-     * upper-case.
+     * @param string mgrs_reference a MGRS coordinate reference string.
+     * @return object An Mgrs object.
      */
     public static function fromGridReference($mgrs_reference)
     {
-        // TODO: make sure upper-case.
-        // TODO: strip out white space.
-        // TODO: validate it as a string too.
-        if (strlen($mgrs_reference) === 0) {
-            throw new \Exception("MGRSPoint converting from nothing");
+        // Make sure upper-case letters are used.
+        $mgrs_reference = strtoupper($mgrs_reference);
+
+        // Strip out single-line white space.
+        $mgrs_reference = str_replace(array(" ", "\t"), "", $mgrs_reference);
+
+        // Validate it as a string.
+        if ( ! is_string($mgrs_reference)) {
+            throw new \Exception("MGRS reference must be a string; $s supplied", gettype($mgrs_reference));
         }
 
         $length = strlen($mgrs_reference);
 
+        if ($length === 0) {
+            throw new \Exception("MGRS reference is zero length");
+        }
+
         $hunK = null;
-        $sb = "";
+        $sb = '';
         $i = 0;
 
-        // get Zone number
+        // Get zone number
 
         // What does this do?
         // It appears to take UP TO two digits from the front of the string.
@@ -355,8 +452,6 @@ class Mgrs extends Utm
             throw new \Exception("MGRSPoint zone letter " . $zone_letter . " not handled: " . $mgrs_reference);
         }
 
-        // PHP substr functions work differently to JS substring.
-        //hunK = mgrsString.substring(i, i += 2);
         $hunK = substr($mgrs_reference, $i, 2);
         $i += 2;
 
@@ -366,21 +461,21 @@ class Mgrs extends Utm
         $north100k = static::getNorthingFromChar(substr($hunK, 1, 1), $set);
 
         // We have a bug where the northing may be 2000000 too low.
-
         // How do we know when to roll over?
 
         while ($north100k < static::getMinNorthing($zone_letter)) {
             $north100k += 2000000;
         }
 
-        // calculate the char index for easting/northing separator
+        // Calculate the char index for easting/northing separator.
         $remainder = $length - $i;
 
         // Remaining string must be dividable into two equal halves.
         if ($remainder % 2 !== 0) {
-            throw new \Exception("MGRSPoint has to have an even number \nof digits after the zone letter and two 100km letters - front \nhalf for easting meters, second half for \nnorthing meters" . $mgrs_reference);
+            throw new \Exception("MGRS reference must have an even number of digits after the letters");
         }
 
+        // $sep gives us the accuracy; it is the number of digits for the northing and for the easting.
         $sep = $remainder / 2;
 
         $sepEasting = 0.0;
@@ -405,6 +500,9 @@ class Mgrs extends Utm
             $zone_letter,
             $zone_number
         );
+
+        // Set the accuracy according to the number of digits found.
+        $mgrs->setAccuracy($sep);
 
         return $mgrs;
     }
