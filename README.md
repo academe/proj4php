@@ -75,11 +75,12 @@ The Mgrs class extends Utm with its set of reference conversion methods.
     $mgrs = Mgrs::fromGridReference($mgrs_grid_reference);
 
     // To a MGRS grid reference string.
-    // Template is optional.
+    // Template is optional, defaulting to '%z%l%k%e%n'.
     // The accuracy is optional 0 to 5, defaulting to 5.
     $grid_reference = $mgrs->toGridReference($template, $accuracy);
     
-    // To a single lat/long coordinate.
+    // To a single lat/long coordinate in the *centre* of the square according to
+    // teh accuracy, to one metre.
     // $accuracy is optional, and defaults to the accuracy of the current coordinate.
     $lat_long = $mgrs->toPoint($accuracy);
     
