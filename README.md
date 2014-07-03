@@ -84,6 +84,10 @@ The Mgrs class extends Utm with its set of reference conversion methods.
     // $accuracy is optional, and defaults to the accuracy of the current coordinate.
     $lat_long = $mgrs->toPoint($accuracy);
     
+    // The bottom left coordinate, disregarding the accuracy (like toPoint with the
+    // maximum accuracy of 5).
+    $lat_long = $mgrs->toLatLong();
+
     // To a Square region.
     // The accuracy is optional 0 to 5, defaulting to 5.
     $square = $mgrs->toSquare($accuracy);
