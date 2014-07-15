@@ -2,7 +2,7 @@
 
 namespace Academe\Proj4Php\Projections;
 
-use Academe\Proj4Php\Proj4Php;
+use \Academe\Proj4Php\Proj4 as Proj4Php;
 
 /**
  * Author : Julien Moquet
@@ -72,7 +72,7 @@ class Merc {
         $lon = $p->x;
         $lat = $p->y;
 
-        // convert to radians
+        // Check ranges. Checks done in degrees, for clarity.
         if (
             $lat * Proj4Php::$common->R2D > 90.0 &&
             $lat * Proj4Php::$common->R2D < -90.0 &&
@@ -91,12 +91,12 @@ class Merc {
                 $x = $this->x0 + $this->a * $this->k0 * Proj4Php::$common->adjust_lon( $lon - $this->long0 );
                 $y = $this->y0 + $this->a * $this->k0 * log( tan( Proj4Php::$common->FORTPI + 0.5 * $lat ) );
             } else {
-                $sinphi = sin( lat );
+                $sinphi = sin( $lat );
                 $ts = Proj4Php::$common . tsfnz( $this->e, $lat, $sinphi );
                 $x = $this->x0 + $this->a * $this->k0 * Proj4Php::$common->adjust_lon( $lon - $this->long0 );
                 $y = $this->y0 - $this->a * $this->k0 * log( $ts );
             }
-            
+
             $p->x = $x;
             $p->y = $y;
 

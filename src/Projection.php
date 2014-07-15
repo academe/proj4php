@@ -2,6 +2,8 @@
 
 namespace Academe\Proj4Php;
 
+use Academe\Proj4Php\Proj4 as Proj4Php;
+
 /**
  * Author : Julien Moquet, Jason Judge
  * 
@@ -147,22 +149,26 @@ class Projection {
      *    wait for the readyToUse property is set to true.
      *    To prevent dynamic loading, include the defs through a script tag in
      *    your application.
+     * @todo We really should be reading these definitions from one or more data
+     * sources and not having to create a class for each one.
      *
      */
     public function loadProjDefinition()
     {
         // Check if in memory.
-        if (array_key_exists($this->srsCode, Proj4php::$defs)) {
+        if (array_key_exists($this->srsCode, Proj4Php::$defs)) {
             $this->defsLoaded();
             return;
         }
 
         // Otherwise check for def on the server
-        $filename = dirname(__FILE__) . '/defs/' . strtoupper( $this->srsAuth ) . $this->srsProjNumber . '.php';
+        //$filename = dirname(__FILE__) . '/defs/' . strtoupper( $this->srsAuth ) . $this->srsProjNumber . '.php';
+        $classname = '\\Academe\\Proj4Php\\Defs\\' . ucfirst(strtolower($this->srsAuth)) . $this->srsProjNumber;
 
         try {
-            Proj4php::loadScript($filename);
-            $this->defsLoaded(); // succes
+            //Proj4php::loadScript($filename);
+            $classname::init();
+            $this->defsLoaded(); // success
         } catch ( Exception $e ) {
             $this->loadFromService(); // fail
         }
@@ -492,7 +498,7 @@ class Projection {
             default:
                 break;
         }
-        
+
         foreach( $wktArray as $wktArrayContent ) {
             $this->parseWKT( $wktArrayContent );
         }
@@ -658,3 +664,4 @@ class Projection {
         $this->datum = new Datum($this);
     }
 }
+

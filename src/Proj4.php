@@ -18,7 +18,9 @@ namespace Academe\Proj4Php;
 //require_once($dir . "/proj4phpLongLat.php");
 //require_once($dir . "/proj4phpPoint.php");
 
-class Proj4Php {
+use \Academe\Proj4Php\Proj4 as Proj4Php;
+
+class Proj4 {
     protected $defaultDatum = 'WGS84';
 
     public static $ellipsoid = array();
@@ -56,6 +58,9 @@ class Proj4Php {
     {
         // These are so widely used, we'll go ahead and throw them in
         // without requiring a separate .js file
+        // TODO: no, just put them all with the data like the remainder, but maybe list a number
+        // of them to be loaded by default at the start.
+
         self::$defs['WGS84'] = "+title=long/lat:WGS84 +proj=longlat +ellps=WGS84 +datum=WGS84 +units=degrees";
         self::$defs['EPSG:4326'] = "+title=long/lat:WGS84 +proj=longlat +a=6378137.0 +b=6356752.31424518 +ellps=WGS84 +datum=WGS84 +units=degrees";
         self::$defs['EPSG:4269'] = "+title=long/lat:NAD83 +proj=longlat +a=6378137.0 +b=6356752.31414036 +ellps=GRS80 +datum=NAD83 +units=degrees";
@@ -199,10 +204,10 @@ class Proj4Php {
         // Workaround for datum shifts towgs84, if either source or destination projection is not wgs84
         // WS, 2014/03/26 changed from recursive call of function transform to seperate function doTransform 
         if (isset($source->datum) && isset($dest->datum) &&
-           ($source->datum->datum_type == Proj4php::$common->PJD_3PARAM || $source->datum->datum_type == Proj4php::$common->PJD_7PARAM || (isset($source->datumCode) && $source->datumCode != "WGS84")) &&
-           ($dest->datum->datum_type == Proj4php::$common->PJD_3PARAM || $dest->datum->datum_type == Proj4php::$common->PJD_7PARAM || (isset($dest->datumCode) && $dest->datumCode != "WGS84"))) {
-           $pointWGS84 = $this->doTransform($source,Proj4php::$WGS84, $point);
-           $point = $this->doTransform(Proj4php::$WGS84, $dest, $pointWGS84);
+           ($source->datum->datum_type == Proj4Php::$common->PJD_3PARAM || $source->datum->datum_type == Proj4Php::$common->PJD_7PARAM || (isset($source->datumCode) && $source->datumCode != "WGS84")) &&
+           ($dest->datum->datum_type == Proj4Php::$common->PJD_3PARAM || $dest->datum->datum_type == Proj4Php::$common->PJD_7PARAM || (isset($dest->datumCode) && $dest->datumCode != "WGS84"))) {
+           $pointWGS84 = $this->doTransform($source,Proj4Php::$WGS84, $point);
+           $point = $this->doTransform(Proj4Php::$WGS84, $dest, $pointWGS84);
         }
         else
         {

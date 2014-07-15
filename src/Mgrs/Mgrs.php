@@ -4,10 +4,6 @@ namespace Academe\Proj4Php\Mgrs;
 
 /**
  * Ported from https://github.com/proj4js/mgrs/blob/master/mgrs.js
- * Good converter site for testing against:
- * http://www.earthpoint.us/convert.aspx
- * Description of the UTM/MGRS grid systems:
- * http://www.luomus.fi/en/utm-mgrs-atlas-florae-europaeae
  * CHECKME: when the accuracy is not maximum (5) then any easting/northing values
  * looked at must be truncated before converting them to lat/long. Just a hunch that
  * something is amiss here.
@@ -148,9 +144,7 @@ class Mgrs extends Utm
      * @param string template Optional; the template to use.
      * @param number accuracy Optional; Accuracy in digits (1-5); overrides the current accuracy.
      * @return string MGRS coordinate reference string for the current location.
-     * @todo Test this on easting/northing strings that are less than 5 digits long.
-     * Allowed formats are documented, with examples, here:
-     * http://en.wikipedia.org/wiki/Military_grid_reference_system
+     *
      * There is a format with an accuracy of less then zero (GZD only, precision level 6° × 8°)
      * and we may need to support that too. Maybe a separate method will do that.
      * CHECKME: the method interface has been overridden from the parent. We may need to drop $accuracy

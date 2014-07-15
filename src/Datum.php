@@ -10,6 +10,8 @@ namespace Academe\Proj4Php;
  * License: LGPL as per: http://www.gnu.org/copyleft/lesser.html 
  */
 
+use Academe\Proj4Php\Proj4 as Proj4Php;
+
 /** datum object
  */
 class Datum {

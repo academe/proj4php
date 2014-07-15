@@ -9,6 +9,9 @@ namespace Academe\Proj4Php\Mgrs;
  * @todo Implement a fromGridReference() supporting UTM grid references. Note that
  * many formats are ambiguous, so reference strings will need modifiers to remove
  * that ambiguity.
+ * @todo UTM is just one variation of the general Transverse Mercator projection.
+ * Pull th underlying TM projection out to a base class, then other projections (with
+ * their own grid reference formats and rules) can be applied.
  */
 
 class Utm
@@ -105,6 +108,7 @@ class Utm
         }
 
         // TODO: validate lat and long ranges, assuming they have been set, and throw exception if necessary.
+        // lat: -180 to +180; long: -90 to +90
         /*
         if (...) {
             // Exception here.
@@ -218,8 +222,7 @@ class Utm
         // the lettering sequence.
         // Note that A, B, Y and Z *do* exist, and cover an East or West half of each pole.
         // But strictly the poles are covered by the Universal Polar Stereograpic (UPS) coordinate
-        // system. This is described well here:
-        // http://therucksack.tripod.com/MiBSAR/LandNav/UTM/UTM.htm
+        // system.
 
         if ((84 >= $latitude) && ($latitude >= 72)) {
             $letter_designator = 'X';
@@ -352,8 +355,6 @@ class Utm
 
     /**
      * Format the coordinate as a UTM string.
-     * We will be using the full lettering rather than the N/S denotion (though it
-     * may be useful to make that an option).
      * @param string format Optional template to format the reference.
      */
     public function toGridReference($template = null)
