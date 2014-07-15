@@ -1,4 +1,4 @@
-code,towgs84,ellipse,nadgrids,name
+code,towgs84,ellipsoid,nadgrids,name
 wgs84,"0,0,0",WGS84,,WGS84
 ch1903,"674.374,15.056,405.346",bessel,,swiss
 ggrs87 ,"-199.87,74.79,246.62",GRS80,,Greek_Geodetic_Reference_System_1987

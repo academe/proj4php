@@ -101,3 +101,16 @@ The MGRS grid reference formatting fields are:
 * %n Northing, to the current accuracy
 
 Instantiating a Utm, Mgrs, LatLong or Square class always requires a valid coordiate in some form.
+
+References
+==========
+
+* http://www.luomus.fi/en/utm-mgrs-atlas-florae-europaeae  
+  Description of the UTM/MGRS grid systems
+* http://www.earthpoint.us/convert.aspx  
+  Good converter site for testing against
+* http://en.wikipedia.org/wiki/Military_grid_reference_system  
+  MGRS grid reference format definition and examples.
+* http://therucksack.tripod.com/MiBSAR/LandNav/UTM/UTM.htm  
+  Great description of how the UTM grid reference works, including the polar regions.
+  Has an emphasis on how the system is used my map readers and users.
