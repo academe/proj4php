@@ -64,6 +64,15 @@ class Proj4 {
         self::$defs['WGS84'] = "+title=long/lat:WGS84 +proj=longlat +ellps=WGS84 +datum=WGS84 +units=degrees";
         self::$defs['EPSG:4326'] = "+title=long/lat:WGS84 +proj=longlat +a=6378137.0 +b=6356752.31424518 +ellps=WGS84 +datum=WGS84 +units=degrees";
         self::$defs['EPSG:4269'] = "+title=long/lat:NAD83 +proj=longlat +a=6378137.0 +b=6356752.31414036 +ellps=GRS80 +datum=NAD83 +units=degrees";
+
+        // CHECKME: does the title need to be quoted? Probably not, as the defs are exploded at "+" and "=" to
+        // separate the parts, rather than parsed in a stateful way. However, finding a definition of the 
+        // syntax for the Proj.4 def string is not easy.
+        // In here: ftp://ftp.remotesensing.org/proj/OF90-284.pdf under "Cartographic Parameters"
+        // +title does not seem to be mentioned in any of the Proj.4 documentation, except as unimplemented
+        // feature requests. The BNF for the parameter string is questioned in various places, but there are
+        // no definitive answers to how it should be parsed http://lists.maptools.org/pipermail/proj/2008-October/003940.html
+
         self::$defs['EPSG:3875'] = "+title= Google Mercator +proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs";
         self::$defs['EPSG:3785'] = self::$defs['EPSG:3875'];
         self::$defs['GOOGLE']    = self::$defs['EPSG:3875'];
