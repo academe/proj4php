@@ -1,7 +1,7 @@
-code,a,b,rf,name
+code,a,b,rf,ellipseName
 MERIT,6378137,,298.257,MERIT 1983
 SGS85,6378136,,298.257,Soviet Geodetic System 85
-GRS80,6378137,,298.2572221,GRS 1980(IUGG
+GRS80,6378137,,298.2572221,GRS 1980(IUGG, 1980)
 IAU76,6378140,,298.257,IAU 1976
 airy,6377563.396,6356256.91,,Airy 1830
 airy,6377563.396,,299.3249646,Airy 1830
@@ -9,7 +9,7 @@ APL4,6378137,,298.25,Appl. Physics. 1965
 NWL9D,6378145,,298.25,Naval Weapons Lab.
 mod_airy,6377340.189,6356034.446,,Modified Airy
 mod_airy,6377340.189,,299.3249646,Modified Airy
-andrae,6377104.43,,300,Andrae 1876 (Den.
+andrae,6377104.43,,300,Andrae 1876 (Den., Iclnd.)
 aust_SA,6378160,,298.25,Australian Natl & S. Amer. 1969
 ,6378160,,298.25,Australian National
 ,6378160,,298.25,South American 1969

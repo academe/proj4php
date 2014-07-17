@@ -5,23 +5,19 @@ namespace Academe\Proj4Php;
 /**
  * Author : Julien Moquet, Jason Judge
  * 
- * Simple conversion from javascript to PHP of Proj4php by Mike Adair madairATdmsolutions.ca and Richard Greenwood rich@greenwoodmap.com 
+ * Simple conversion from javascript to PHP of Proj4Js by Mike Adair madairATdmsolutions.ca
+ * and Richard Greenwood rich@greenwoodmap.com
  *
  * License: LGPL as per: http://www.gnu.org/copyleft/lesser.html 
  */
-
-// Autoload will handle these:-
-//$dir = dirname( __FILE__ );
-//require_once($dir . "/proj4phpProj.php");
-//require_once($dir . "/proj4phpCommon.php");
-//require_once($dir . "/proj4phpDatum.php");
-//require_once($dir . "/proj4phpLongLat.php");
-//require_once($dir . "/proj4phpPoint.php");
 
 use \Academe\Proj4Php\Proj4 as Proj4Php;
 
 class Proj4 {
     protected $defaultDatum = 'WGS84';
+
+    // TODO: move all these static storage (i.e. globals) to dependency injection
+    // container, held by the an instantiation fo this core class.
 
     public static $ellipsoid = array();
     public static $datum = array();
@@ -30,6 +26,8 @@ class Proj4 {
     public static $primeMeridian = array();
 
     // DI containers.
+    // TODO: also move these to a DI container.
+
     public static $common = null;
     public static $WGS84 = null;
     public static $proj = array();
@@ -41,23 +39,22 @@ class Proj4 {
     public static $defsLookupService = 'http://spatialreference.org/ref';
 
     /**
-      Proj4php.defs is a collection of coordinate system definition objects in the
-      PROJ.4 command line format.
-      Generally a def is added by means of a separate .js file for example:
-
-      <SCRIPT type="text/javascript" src="defs/EPSG26912.js"></SCRIPT>
-
-      def is a CS definition in PROJ.4 WKT format, for example:
-      +proj="tmerc"   //longlat, etc.
-      +a=majorRadius
-      +b=minorRadius
-      +lat0=somenumber
-      +long=somenumber
+     * Proj4php.defs is a collection of coordinate system definition objects in the
+     * PROJ.4 command line format.
+     * Generally a def is added by means of a separate .js file for example:
+     *
+     * def is a CS definition in PROJ.4 WKT format, for example:
+     * +proj="tmerc"   //longlat, etc.
+     * +a=majorRadius
+     * +b=minorRadius
+     * +lat0=somenumber
+     * +long=somenumber
      */
     protected function initDefs()
     {
         // These are so widely used, we'll go ahead and throw them in
-        // without requiring a separate .js file
+        // without requiring a separate file
+
         // TODO: no, just put them all with the data like the remainder, but maybe list a number
         // of them to be loaded by default at the start.
 
@@ -72,16 +69,22 @@ class Proj4 {
         // +title does not seem to be mentioned in any of the Proj.4 documentation, except as unimplemented
         // feature requests. The BNF for the parameter string is questioned in various places, but there are
         // no definitive answers to how it should be parsed http://lists.maptools.org/pipermail/proj/2008-October/003940.html
+        // Note: the "+" may actually be optional on the keywords, so a keyword can be identified by its "+" prefix
+        // or by being followed by a "=". So "title = Google Mercator proj = merc" does not have a title of "Google Mercator proj".
 
         self::$defs['EPSG:3875'] = "+title= Google Mercator +proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs";
+
+        // Some aliases.
         self::$defs['EPSG:3785'] = self::$defs['EPSG:3875'];
-        self::$defs['GOOGLE']    = self::$defs['EPSG:3875'];
+        self::$defs['GOOGLE'] = self::$defs['EPSG:3875'];
         self::$defs['EPSG:900913'] = self::$defs['EPSG:3875'];
         self::$defs['EPSG:102113'] = self::$defs['EPSG:3875'];
     }
 
-    //lookup table to go from the projection name in WKT to the Proj4php projection name
-    //build this out as required
+    // Lookup table to go from the projection name in WKT to the Proj4php projection name
+    // build this out as required.
+    // TODO: pick these up from a data file.
+
     protected function initWKTProjections()
     {
         self::$wktProjections["Lambert Tangential Conformal Conic Projection"] = "lcc";
@@ -92,6 +95,8 @@ class Proj4 {
         self::$wktProjections["Lambert Azimuthal Equal Area"] = "laea";
         self::$wktProjections["Universal Transverse Mercator System"] = "utm";
     }
+
+    // TODO: pick these up from the data file.
 
     protected function initDatum()
     {
@@ -106,6 +111,8 @@ class Proj4 {
         self::$datum["nzgd49"] = array( 'towgs84' => "59.47,-5.04,187.44,0.47,-0.1,1.024,-4.5993", 'ellipse' => "intl", 'datumName' => "New Zealand Geodetic Datum 1949" );
         self::$datum["OSGB36"] = array( 'towgs84' => "446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894", 'ellipse' => "airy", 'datumName' => "Airy 1830" );
     }
+
+    // TODO: read this from the data file.
 
     protected function initEllipsoid()
     {
@@ -153,6 +160,8 @@ class Proj4 {
         self::$ellipsoid["sphere"] = array( 'a' => 6370997.0, 'b' => 6370997.0, 'ellipseName' => "Normal Sphere (r=6370997)" );
     }
 
+    // TODO: read from data files.
+
     protected function initPrimeMeridian()
     {
         self::$primeMeridian["greenwich"] = '0.0';               //"0dE",
@@ -175,6 +184,9 @@ class Proj4 {
      */
     public function __construct()
     {
+        // Initialise the data.
+        // Most of this can be read from data files.
+
         $this->initWKTProjections();
         $this->initDefs();
         $this->initDatum();
@@ -182,6 +194,7 @@ class Proj4 {
         $this->initPrimeMeridian();
 
         // TODO: replace this with some DI magic. Some interfaces will help.
+
         self::$proj['longlat'] = new LongLat();
         self::$proj['identity'] = new LongLat();
         self::$common = new Common();
@@ -199,149 +212,173 @@ class Proj4 {
      * point - {Object} point to transform, may be geodetic (long, lat) or
      *     projected Cartesian (x,y), but should always have x,y properties.
      */
-    public function transform($source, $dest, $point)
+    public function transform(Projection $source, Projection $dest, Point $point)
     {
-       if( !$source->readyToUse ) {
-            self::reportError( "Proj4php initialization for:" . $source->srsCode . " not yet complete" );
+        if ( ! $source->readyToUse) {
+            self::reportError("Proj4php initialization for:" . $source->srsCode . " not yet complete");
             return $point;
         }
-        if( !$dest->readyToUse ) {
-            self::reportError( "Proj4php initialization for:" . $dest->srsCode . " not yet complete" );
+
+        if ( ! $dest->readyToUse) {
+            self::reportError("Proj4php initialization for:" . $dest->srsCode . " not yet complete");
             return $point;
         }
 
         // Workaround for datum shifts towgs84, if either source or destination projection is not wgs84
         // WS, 2014/03/26 changed from recursive call of function transform to seperate function doTransform 
-        if (isset($source->datum) && isset($dest->datum) &&
-           ($source->datum->datum_type == Proj4Php::$common->PJD_3PARAM || $source->datum->datum_type == Proj4Php::$common->PJD_7PARAM || (isset($source->datumCode) && $source->datumCode != "WGS84")) &&
-           ($dest->datum->datum_type == Proj4Php::$common->PJD_3PARAM || $dest->datum->datum_type == Proj4Php::$common->PJD_7PARAM || (isset($dest->datumCode) && $dest->datumCode != "WGS84"))) {
-           $pointWGS84 = $this->doTransform($source,Proj4Php::$WGS84, $point);
-           $point = $this->doTransform(Proj4Php::$WGS84, $dest, $pointWGS84);
+
+        if (
+            isset($source->datum) && isset($dest->datum)
+            && (
+                $source->datum->datum_type == Proj4::$common->PJD_3PARAM
+                || $source->datum->datum_type == Proj4::$common->PJD_7PARAM
+                || (isset($source->datumCode) && $source->datumCode != 'WGS84')
+            )
+            && (
+                $dest->datum->datum_type == Proj4::$common->PJD_3PARAM
+                || $dest->datum->datum_type == Proj4::$common->PJD_7PARAM
+                || (isset($dest->datumCode) && $dest->datumCode != 'WGS84')
+            )
+        ) {
+            $pointWGS84 = $this->doTransform($source, Proj4::$WGS84, $point);
+            $point = $this->doTransform(Proj4::$WGS84, $dest, $pointWGS84);
+        } else {
+            $point = $this->doTransform($source, $dest, $point);
         }
-        else
-        {
-           $point = $this->doTransform($source, $dest, $point);
-        }
+
         return $point;
     }
 
-    public function doTransform($source, $dest, $point)
+    public function doTransform(Projection $source, Projection $dest, Point $point)
     {
         // DGR, 2010/11/12
-        if( $source->axis != "enu" ) {
-            $this->adjust_axis( $source, false, $point );
+        if ($source->axis != 'enu') {
+            $this->adjust_axis($source, false, $point);
         }
 
         // Transform source points to long/lat, if they aren't already.
-        if( $source->projName == "longlat" ) {
-            $point->x *= Proj4php::$common->D2R;  // convert degrees to radians
-            $point->y *= Proj4php::$common->D2R;
+        if ($source->projName == 'longlat' ) {
+            // Convert degrees to radians.
+            $point->x *= Proj4::$common->D2R;
+            $point->y *= Proj4::$common->D2R;
         } else {
-            if( isset($source->to_meter) ) {
+            if (isset($source->to_meter)) {
                 $point->x *= $source->to_meter;
                 $point->y *= $source->to_meter;
             }
-            $source->inverse( $point ); // Convert Cartesian to longlat
+
+            // Convert Cartesian to longlat.
+            $source->inverse($point);
         }
 
-        // Adjust for the prime meridian if necessary
-        if( isset( $source->from_greenwich ) ) {
+        // Adjust for the prime meridian if necessary.
+        if (isset($source->from_greenwich)) {
             $point->x += $source->from_greenwich;
         }
 
         // Convert datums if needed, and if possible.
-        $point = $this->datum_transform( $source->datum, $dest->datum, $point );
+        $point = $this->datum_transform($source->datum, $dest->datum, $point);
 
-        // Adjust for the prime meridian if necessary
-        if( isset( $dest->from_greenwich ) ) {
+        // Adjust for the prime meridian if necessary.
+        if(isset($dest->from_greenwich)) {
             $point->x -= $dest->from_greenwich;
         }
 
-        if( $dest->projName == "longlat" ) {
-            // convert radians to decimal degrees
+        if ($dest->projName == 'longlat') {
+            // Convert radians to decimal degrees.
             $point->x *= Proj4php::$common->R2D;
             $point->y *= Proj4php::$common->R2D;
-        } else {               // else project
-            $dest->forward( $point );
-            if( isset($dest->to_meter) ) {
+        } else {
+            // else project
+
+            $dest->forward($point);
+
+            if (isset($dest->to_meter)) {
                 $point->x /= $dest->to_meter;
                 $point->y /= $dest->to_meter;
             }
         }
 
         // DGR, 2010/11/12
-        if( $dest->axis != "enu" ) {
-            $this->adjust_axis( $dest, true, $point );
+        if ($dest->axis != 'enu') {
+            $this->adjust_axis($dest, true, $point);
         }
 
         return $point;
     }
 
-    /** datum_transform()
-      source coordinate system definition,
-      destination coordinate system definition,
-      point to transform in geodetic coordinates (long, lat, height)
+    /**
+     * datum_transform()
+     * source coordinate system definition,
+     * destination coordinate system definition,
+     * point to transform in geodetic coordinates (long, lat, height)
      */
-    public function datum_transform($source, $dest, $point)
+    public function datum_transform($source, $dest, Point $point)
     {
         // Short cut if the datums are identical.
-        if( $source->compare_datums( $dest ) ) {
-            return $point; // in this case, zero is sucess,
+        if ($source->compare_datums($dest)) {
+            // in this case, zero is sucess,
             // whereas cs_compare_datums returns 1 to indicate TRUE
             // confusing, should fix this
+            return $point;
         }
 
         // Explicitly skip datum transform by setting 'datum=none' as parameter for either source or dest
-        if( $source->datum_type == Proj4php::$common->PJD_NODATUM
-            || $dest->datum_type == Proj4php::$common->PJD_NODATUM ) {
+        if (
+            $source->datum_type == Proj4::$common->PJD_NODATUM
+            || $dest->datum_type == Proj4::$common->PJD_NODATUM
+        ) {
             return $point;
         }
 
         /*
         // If this datum requires grid shifts, then apply it to geodetic coordinates.
-        if( $source->datum_type == Proj4php::$common->PJD_GRIDSHIFT ) {
-            throw(new Exception( "ERROR: Grid shift transformations are not implemented yet." ));
+        if ($source->datum_type == Proj4::$common->PJD_GRIDSHIFT) {
+            throw(new Exception("ERROR: Grid shift transformations are not implemented yet."));
         }
 
-        if( $dest->datum_type == Proj4php::$common->PJD_GRIDSHIFT ) {
-            throw(new Exception( "ERROR: Grid shift transformations are not implemented yet." ));
+        if ($dest->datum_type == Proj4php::$common->PJD_GRIDSHIFT) {
+            throw(new Exception("ERROR: Grid shift transformations are not implemented yet."));
         }
         */
 
         // Do we need to go through geocentric coordinates?
-        if( $source->es != $dest->es || $source->a != $dest->a
-            || $source->datum_type == Proj4php::$common->PJD_3PARAM
-            || $source->datum_type == Proj4php::$common->PJD_7PARAM
-            || $dest->datum_type == Proj4php::$common->PJD_3PARAM
-            || $dest->datum_type == Proj4php::$common->PJD_7PARAM ) {
-
+        if (
+            $source->es != $dest->es || $source->a != $dest->a
+            || $source->datum_type == Proj4::$common->PJD_3PARAM
+            || $source->datum_type == Proj4::$common->PJD_7PARAM
+            || $dest->datum_type == Proj4::$common->PJD_3PARAM
+            || $dest->datum_type == Proj4::$common->PJD_7PARAM
+        ) {
             // Convert to geocentric coordinates.
-            $source->geodetic_to_geocentric( $point );
+            $source->geodetic_to_geocentric($point);
+
             // CHECK_RETURN;
             // Convert between datums
-            if( $source->datum_type == Proj4php::$common->PJD_3PARAM || $source->datum_type == Proj4php::$common->PJD_7PARAM ) {
-                $source->geocentric_to_wgs84( $point );
+            if ($source->datum_type == Proj4::$common->PJD_3PARAM || $source->datum_type == Proj4::$common->PJD_7PARAM) {
+                $source->geocentric_to_wgs84($point);
                 // CHECK_RETURN;
             }
 
-            if( $dest->datum_type == Proj4php::$common->PJD_3PARAM || $dest->datum_type == Proj4php::$common->PJD_7PARAM ) {
+            if ($dest->datum_type == Proj4::$common->PJD_3PARAM || $dest->datum_type == Proj4::$common->PJD_7PARAM) {
                 $dest->geocentric_from_wgs84( $point );
                 // CHECK_RETURN;
             }
 
             // Convert back to geodetic coordinates
-            $dest->geocentric_to_geodetic( $point );
+            $dest->geocentric_to_geodetic($point);
             // CHECK_RETURN;
         }
 
         // Apply grid shift to destination if required
         /*
-        if( $dest->datum_type == Proj4php::$common->PJD_GRIDSHIFT ) {
-            throw(new Exception( "ERROR: Grid shift transformations are not implemented yet." ));
+        if ($dest->datum_type == Proj4php::$common->PJD_GRIDSHIFT) {
+            throw(new Exception("ERROR: Grid shift transformations are not implemented yet."));
             // pj_apply_gridshift( pj_param(dest.params,"snadgrids").s, 1, point);
             // CHECK_RETURN;
         }
         */
+
         return $point;
     }
 
@@ -354,28 +391,29 @@ class Proj4 {
      * denorm {Boolean} when false, normalize
      * point {Object} the coordinates to adjust
      */
-    public function adjust_axis($crs, $denorm, $point)
+    public function adjust_axis($crs, $denorm, Point $point)
     {
         $xin = $point->x;
         $yin = $point->y;
-        $zin = isset( $point->z ) ? $point->z : 0.0;
-        #$v;
-        #$t;
-        for( $i = 0; $i < 3; $i++ ) {
-            if( $denorm && $i == 2 && !isset( $point->z ) ) {
+        $zin = isset($point->z) ? $point->z : 0.0;
+
+        for ($i = 0; $i < 3; $i++) {
+            if ($denorm && $i == 2 && !isset($point->z)) {
                 continue;
             }
-            if( $i == 0 ) {
+
+            if ($i == 0) {
                 $v = $xin;
                 $t = 'x';
-            } else if( $i == 1 ) {
+            } elseif ($i == 1) {
                 $v = $yin;
                 $t = 'y';
             } else {
                 $v = $zin;
                 $t = 'z';
             }
-            switch( $crs->axis[$i] ) {
+
+            switch($crs->axis[$i]) {
                 case 'e':
                     $point[$t] = $v;
                     break;
@@ -389,20 +427,21 @@ class Proj4 {
                     $point[$t] = -$v;
                     break;
                 case 'u':
-                    if( isset( $point[$t] ) ) {
+                    if (isset($point[$t])) {
                         $point->z = $v;
                     }
                     break;
                 case 'd':
-                    if( isset( $point[$t] ) ) {
+                    if (isset($point[$t])) {
                         $point->z = -$v;
                     }
                     break;
-                default :
-                    throw(new Exception( "ERROR: unknow axis (" . $crs->axis[$i] . ") - check definition of " . $crs->projName ));
+                default:
+                    throw(new Exception("ERROR: unknow axis (" . $crs->axis[$i] . ") - check definition of " . $crs->projName));
                     return null;
             }
         }
+
         return $point;
     }
 
@@ -428,9 +467,8 @@ class Proj4 {
         } elseif (file_exists($filename)) {
             require_once($filename);
             return true;
-        }
-        else {
-            throw (new \Exception( "File $filename could not be found or was not able to be loaded." ));
+        } else {
+            throw (new \Exception("File $filename could not be found or was not able to be loaded."));
             return false;
         }
     }
@@ -450,10 +488,13 @@ class Proj4 {
      */
     public static function extend($destination, $source)
     {
-        if( $source != null )
-            foreach( $source as $key => $value ) {
+        if ($source != null) {
+            foreach($source as $key => $value) {
                 $destination->$key = $value;
             }
+        }
+
         return $destination;
     }
 }
+
