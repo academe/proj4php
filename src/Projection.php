@@ -244,7 +244,7 @@ class Projection {
         $class = __NAMESPACE__ . '\\Projections\\' . ucfirst($projName);
 
         if (class_exists($class)) {
-            Proj4::$proj['merc'] = new $class();
+            Proj4::$proj[$projName] = new $class();
             $this->loadProjCodeSuccess($projName);
             return;
         }
