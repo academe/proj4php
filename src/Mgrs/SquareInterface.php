@@ -6,8 +6,7 @@ namespace Academe\Proj4Php\Mgrs;
  * Square interface.
  */
 
-interface SquareInterface
-{
+interface SquareInterface {
     /**
      * Set the bottom left coordinate of the square.
      */

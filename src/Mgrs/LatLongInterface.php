@@ -6,8 +6,7 @@ namespace Academe\Proj4Php\Mgrs;
  * Interface for setting and getting lat/long values.
  */
 
-interface LatLongInterface
-{
+interface LatLongInterface {
     /**
      * Set the latitude.
      *

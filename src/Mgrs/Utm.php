@@ -14,8 +14,7 @@ namespace Academe\Proj4Php\Mgrs;
  * their own grid reference formats and rules) can be applied.
  */
 
-class Utm
-{
+class Utm {
     /**
      * The parts of a UTM coordinate.
      */
@@ -50,8 +49,7 @@ class Utm
      * Constructor.
      * @todo Validate values.
      */
-    public function __construct($northing, $easting, $zone_number, $zone_letter)
-    {
+    public function __construct($northing, $easting, $zone_number, $zone_letter) {
         $this->northing = $northing;
         $this->easting = $easting;
         $this->zone_number = $zone_number;
@@ -62,23 +60,19 @@ class Utm
      * Get the current value elements.
      */
 
-    public function getNorthing()
-    {
+    public function getNorthing() {
         return $this->northing;
     }
 
-    public function getEasting()
-    {
+    public function getEasting() {
         return $this->easting;
     }
 
-    public function getZoneNumber()
-    {
+    public function getZoneNumber() {
         return $this->zone_number;
     }
 
-    public function getZoneLetter()
-    {
+    public function getZoneLetter() {
         return $this->zone_letter;
     }
 
@@ -86,15 +80,14 @@ class Utm
      * Instantiate a Utm onject from Lat/Long coordinates or a LatLong object.
      * Returns a new Utm object.
      */
-    public static function fromLatLong($latitude, $longitude = null)
-    {
+    public static function fromLatLong($latitude, $longitude = null) {
         // Accept various inputs.
 
-        if ( ! isset($longitude)) {
+        if (!isset($longitude)) {
             // One parameter only supplied. If this is not already a LatLong object,
             // then convert it into one.
 
-            if ( ! is_a($latitude, 'Academe\\Proj4Php\\Mgrs\\LatLongInterface')) {
+            if (!is_a($latitude, 'Academe\\Proj4Php\\Mgrs\\LatLongInterface')) {
                 // If some form of array, then let LatLong work out how to interpret it.
                 $latitude = new LatLong($latitude);
             }
@@ -137,11 +130,11 @@ class Utm
         $A = cos($lat_rad) * ($long_rad - $long_origin_rad);
 
         $M = static::$a * (
-            (1 - static::$ecc_squared / 4 - 3 * pow(static::$ecc_squared, 2) / 64 - 5 * pow(static::$ecc_squared, 3) / 256) * $lat_rad
-            - (3 * static::$ecc_squared / 8 + 3 * pow(static::$ecc_squared, 2) / 32 + 45 * pow(static::$ecc_squared, 3) / 1024) * sin(2 * $lat_rad)
-            + (15 * pow(static::$ecc_squared, 2) / 256 + 45 * pow(static::$ecc_squared, 3) / 1024) * sin(4 * $lat_rad)
-            - (35 * pow(static::$ecc_squared, 3) / 3072) * sin(6 * $lat_rad)
-        );
+                (1 - static::$ecc_squared / 4 - 3 * pow(static::$ecc_squared, 2) / 64 - 5 * pow(static::$ecc_squared, 3) / 256) * $lat_rad
+                - (3 * static::$ecc_squared / 8 + 3 * pow(static::$ecc_squared, 2) / 32 + 45 * pow(static::$ecc_squared, 3) / 1024) * sin(2 * $lat_rad)
+                + (15 * pow(static::$ecc_squared, 2) / 256 + 45 * pow(static::$ecc_squared, 3) / 1024) * sin(4 * $lat_rad)
+                - (35 * pow(static::$ecc_squared, 3) / 3072) * sin(6 * $lat_rad)
+            );
 
         $utm_easting = (static::$k0 * $N * ($A + (1 - $T + $C) * pow($A, 3) / 6.0 + (5 - 18 * pow($T, 3) + 72 * $C - 58 * $ecc_prime_squared) * pow($A, 5) / 120.0) + 500000.0);
 
@@ -172,8 +165,7 @@ class Utm
      * The zone number largely identifies the longitude, in 6 degree increments, but
      * has some exceptions at certain latitudes.
      */
-    public static function calcZoneNumber($latitude, $longitude)
-    {
+    public static function calcZoneNumber($latitude, $longitude) {
         // Convert 0 to 360 to -180 to +180
         // Might just replace this with an if-statement, as that would be clearer.
         $longitude = ($longitude + 180) - floor(($longitude + 180) / 360) * 360 - 180;
@@ -215,8 +207,7 @@ class Utm
      * @param number latitude The latitude in WGS84 to get the letter designator for.
      * @return char The letter designator.
      */
-    protected static function calcLetterDesignator($latitude)
-    {
+    protected static function calcLetterDesignator($latitude) {
         // I'm sure we can turn this into a simple formula, perhaps with a string lookup.
         // It basically splits the latitudes into 8 degree bands, and leaves out O and I in
         // the lettering sequence.
@@ -278,8 +269,7 @@ class Utm
     /**
      * Get the hemisphere indicator - N or S.
      */
-    protected static function calcHemisphereLetter($northing)
-    {
+    protected static function calcHemisphereLetter($northing) {
         return (ord($northing) >= ord('N') ? 'N' : 'S');
     }
 
@@ -294,8 +284,7 @@ class Utm
      * @return {object} An object literal containing either lat and lon values
      *     Returns null if the conversion failed.
      */
-    public function toLatLong()
-    {
+    public function toLatLong() {
         $zone_letter = $this->getZoneLetter();
         $zone_number = $this->getZoneNumber();
 
@@ -324,7 +313,7 @@ class Utm
 
         // There are 60 zones with zone 1 being at West -180 to -174
         // +3 puts origin in middle of zone.
-        $long_origin = ($zone_number - 1) * 6 - 180 + 3; 
+        $long_origin = ($zone_number - 1) * 6 - 180 + 3;
 
         $ecc_prime_squared = (static::$ecc_squared) / (1 - static::$ecc_squared);
 
@@ -357,10 +346,9 @@ class Utm
      * Format the coordinate as a UTM string.
      * @param string format Optional template to format the reference.
      */
-    public function toGridReference($template = null)
-    {
+    public function toGridReference($template = null) {
         // Set the default format if not overridden.
-        if ( ! isset($template)) {
+        if (!isset($template)) {
             $template = '%z%l %e %n';
         }
 
@@ -387,8 +375,7 @@ class Utm
     /**
      * Default cast to string.
      */
-    public function __toString()
-    {
+    public function __toString() {
         return $this->toGridReference();
     }
 }

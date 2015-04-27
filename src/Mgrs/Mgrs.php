@@ -9,8 +9,7 @@ namespace Academe\Proj4Php\Mgrs;
  * something is amiss here.
  */
 
-class Mgrs extends Utm
-{
+class Mgrs extends Utm {
     /**
      * UTM zones are grouped, and assigned to one of a group of 6
      * sets.
@@ -94,8 +93,7 @@ class Mgrs extends Utm
      *      100 m, 4 for 1000 m or 5 for 10000 m). Optional, default is 5.
      * @return {string} the MGRS string for the given location and accuracy.
      */
-    public static function forward($lat_long, $accuracy = null)
-    {
+    public static function forward($lat_long, $accuracy = null) {
         // This handles $lat_long being in any of a number of different formats.
         $mgrs = static::fromLatLong($lat_long);
 
@@ -112,8 +110,7 @@ class Mgrs extends Utm
      *     bounding box for the provided MGRS reference.
      * We actually want to return a Square.
      */
-    public static function inverse($mgrs_grid_reference)
-    {
+    public static function inverse($mgrs_grid_reference) {
         $mgrs = static::fromGridReference($mgrs_grid_reference);
 
         return $mgrs->toSquare();
@@ -124,8 +121,7 @@ class Mgrs extends Utm
      * The point is the centre of the square, according to the accuracy that the
      * reference carries (the number of digits it uses).
      */
-    public function toPoint($accuracy = null)
-    {
+    public function toPoint($accuracy = null) {
         // Get the bounding box.
         $lat_long_bounding_box = $this->toSquare($accuracy);
 
@@ -150,13 +146,12 @@ class Mgrs extends Utm
      * CHECKME: the method interface has been overridden from the parent. We may need to drop $accuracy
      * to get them consistent again.
      */
-    public function toGridReference($template = null, $accuracy = null)
-    {
-        if ( ! isset($template)) {
+    public function toGridReference($template = null, $accuracy = null) {
+        if (!isset($template)) {
             $template = '%z%l%k%e%n';
         }
 
-        if ( ! isset($accuracy)) {
+        if (!isset($accuracy)) {
             $accuracy = $this->getAccuracy();
         }
 
@@ -184,8 +179,7 @@ class Mgrs extends Utm
     /**
      * Return as the square bounded by the current, or the given accuracy.
      */
-    public function toSquare($accuracy = null)
-    {
+    public function toSquare($accuracy = null) {
         // The top-right of the square is the bottom left with an appropriate number
         // of metres added.
 
@@ -209,10 +203,9 @@ class Mgrs extends Utm
     /**
      * Get the size of the square in metres.
      */
-    public function getSize($accuracy = null)
-    {
+    public function getSize($accuracy = null) {
         // Use the current accuracy, if not provided.
-        if ( ! isset($accuracy)) {
+        if (!isset($accuracy)) {
             $accuracy = $this->accuracy;
         }
 
@@ -224,10 +217,9 @@ class Mgrs extends Utm
      * Set the number of digits to be used by default for output (0 to 5).
      */
 
-    public function setAccuracy($accuracy)
-    {
+    public function setAccuracy($accuracy) {
         // Must be an integer.
-        if ( ! is_int($accuracy)) {
+        if (!is_int($accuracy)) {
             throw new \InvalidArgumentException(
                 sprintf('Accuracy must be an integer; %s passed in', gettype($accuracy))
             );
@@ -240,8 +232,7 @@ class Mgrs extends Utm
         $this->accuracy = $accuracy;
     }
 
-    public function getAccuracy()
-    {
+    public function getAccuracy() {
         return $this->accuracy;
     }
 
@@ -255,8 +246,7 @@ class Mgrs extends Utm
      * @param {number} zoneNumber
      * @return the two letter 100k designator for the given UTM location.
      */
-    protected static function get100kId($easting, $northing, $zone_number)
-    {
+    protected static function get100kId($easting, $northing, $zone_number) {
         $set_parm = static::get100kSetForZone($zone_number);
         $set_column = floor($easting / 100000);
         $set_row = floor($northing / 100000) % 20;
@@ -270,8 +260,7 @@ class Mgrs extends Utm
      * @param {number} i An UTM zone number.
      * @return {number} the 100k set the UTM zone is in.
      */
-    protected static function get100kSetForZone($i)
-    {
+    protected static function get100kSetForZone($i) {
         $set_parm = $i % static::NUM_100K_SETS;
 
         if ($set_parm === 0) {
@@ -297,8 +286,7 @@ class Mgrs extends Utm
      *        1-60.
      * @return two letter MGRS 100k code.
      */
-    protected function getLetter100kId($column, $row, $parm)
-    {
+    protected function getLetter100kId($column, $row, $parm) {
         // colOrigin and rowOrigin are the letters at the origin of the set
         $index = $parm - 1;
         $colOrigin = ord(substr(static::SET_ORIGIN_COLUMN_LETTERS, $index, 1));
@@ -379,8 +367,7 @@ class Mgrs extends Utm
      * @param string mgrs_reference a MGRS coordinate reference string.
      * @return object An Mgrs object.
      */
-    public static function fromGridReference($mgrs_reference)
-    {
+    public static function fromGridReference($mgrs_reference) {
         // Make sure upper-case letters are used.
         $mgrs_reference = strtoupper($mgrs_reference);
 
@@ -388,7 +375,7 @@ class Mgrs extends Utm
         $mgrs_reference = str_replace(array(" ", "\t"), "", $mgrs_reference);
 
         // Validate it as a string.
-        if ( ! is_string($mgrs_reference)) {
+        if (!is_string($mgrs_reference)) {
             throw new \Exception("MGRS reference must be a string; $s supplied", gettype($mgrs_reference));
         }
 
@@ -410,7 +397,7 @@ class Mgrs extends Utm
         // If there are less than two digits, then it seems to be happy (though
         // en exception is raised later if there are no digits).
 
-        while ( ! preg_match('/[A-Z]/', substr($mgrs_reference, $i, 1))) {
+        while (!preg_match('/[A-Z]/', substr($mgrs_reference, $i, 1))) {
             if ($i >= 2) {
                 throw new \Exception("MGRSPoint bad conversion from: " . $mgrs_reference);
             }
@@ -513,8 +500,7 @@ class Mgrs extends Utm
      * looking at the first letter.
      */
 
-    protected static function getEastingFromChar($e, $set)
-    {
+    protected static function getEastingFromChar($e, $set) {
         // colOrigin is the letter at the origin of the set for the column.
         $curCol = substr(static::SET_ORIGIN_COLUMN_LETTERS, $set - 1, 1);
         $eastingValue = 100000.0;
@@ -565,8 +551,7 @@ class Mgrs extends Utm
      * @todo Better name: use "letter" rather than "char" and show this is just the second letter.
      */
 
-    protected function getNorthingFromChar($n, $set)
-    {
+    protected function getNorthingFromChar($n, $set) {
         if ($n > 'V') {
             throw new \Exception("MGRSPoint given invalid Northing " . $n);
         }
@@ -614,8 +599,7 @@ class Mgrs extends Utm
      * @return {number}
      */
 
-    protected static function getMinNorthing($zone_letter)
-    {
+    protected static function getMinNorthing($zone_letter) {
         if (isset(static::$zone_min_northing[$zone_letter])) {
             return static::$zone_min_northing[$zone_letter];
         }

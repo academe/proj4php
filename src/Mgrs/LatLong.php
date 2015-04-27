@@ -6,8 +6,7 @@ namespace Academe\Proj4Php\Mgrs;
  * Lat/long concrete.
  */
 
-class LatLong implements LatLongInterface
-{
+class LatLong implements LatLongInterface {
     /**
      * The latitude of the coordinate.
      *
@@ -28,17 +27,15 @@ class LatLong implements LatLongInterface
      * {@inheritDoc}
      */
 
-    public function normalizeLatitude($latitude)
-    {
-        return (double) max(-90, min(90, $latitude));
+    public function normalizeLatitude($latitude) {
+        return (double)max(-90, min(90, $latitude));
     }
 
     /**
      * {@inheritDoc}
      */
 
-    public function normalizeLongitude($longitude)
-    {
+    public function normalizeLongitude($longitude) {
         if (180 === $longitude % 360) {
             return 180.0;
         }
@@ -46,15 +43,14 @@ class LatLong implements LatLongInterface
         $mod = fmod($longitude, 360);
         $longitude = $mod < -180 ? $mod + 360 : ($mod > 180 ? $mod - 360 : $mod);
 
-        return (double) $longitude;
+        return (double)$longitude;
     }
 
     /**
      * {@inheritDoc}
      */
 
-    public function setLatitude($latitude)
-    {
+    public function setLatitude($latitude) {
         $this->latitude = $this->normalizeLatitude($latitude);
     }
 
@@ -62,8 +58,7 @@ class LatLong implements LatLongInterface
      * {@inheritDoc}
      */
 
-    public function getLatitude()
-    {
+    public function getLatitude() {
         return $this->latitude;
     }
 
@@ -71,8 +66,7 @@ class LatLong implements LatLongInterface
      * {@inheritDoc}
      */
 
-    public function setLongitude($longitude)
-    {
+    public function setLongitude($longitude) {
         $this->longitude = $this->normalizeLongitude($longitude);
     }
 
@@ -80,8 +74,7 @@ class LatLong implements LatLongInterface
      * {@inheritDoc}
      */
 
-    public function getLongitude()
-    {
+    public function getLongitude() {
         return $this->longitude;
     }
 
@@ -89,9 +82,8 @@ class LatLong implements LatLongInterface
      * Constructor to set values.
      * @todo Do we want to support named element keys, e.g. 'lat' and 'lon'?
      */
-    public function __construct($latitude, $longitude = null)
-    {
-        if ( ! isset($longitude) && is_array($latitude) && count($latitude) == 2) {
+    public function __construct($latitude, $longitude = null) {
+        if (!isset($longitude) && is_array($latitude) && count($latitude) == 2) {
             // The order of the elements is latitude then longitude.
             list($lat, $long) = array_values($latitude);
             $this->setLatitude($lat);
