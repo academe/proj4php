@@ -2,7 +2,7 @@
 
 namespace Academe\Proj4Php\Projections;
 
-use \Academe\Proj4Php\Proj4 as Proj4Php;
+use Academe\Proj4Php\Proj4 as Proj4Php;
 
 /**
  * Author : Julien Moquet
