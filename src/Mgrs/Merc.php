@@ -7,8 +7,7 @@ namespace Academe\Proj4Php\Mgrs;
  * Provides conversion to and from Lat/Long, using the WGS84 ellipsoid.
  */
 
-class Merc
-{
+class Merc {
     // TODO
 }
 

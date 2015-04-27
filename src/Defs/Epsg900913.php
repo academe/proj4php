@@ -4,10 +4,8 @@ namespace Academe\Proj4Php\Defs;
 
 use Academe\Proj4Php\Proj4;
 
-class Epsg900913
-{
-    public function init()
-    {
+class Epsg900913 {
+    public function init() {
         // Add this entry to the static global. Not a good way to handle it when this is essentially just a
         // lumnp of string data.
 

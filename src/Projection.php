@@ -4,10 +4,10 @@ namespace Academe\Proj4Php;
 
 /**
  * Author : Julien Moquet, Jason Judge
- * 
+ *
  * Inspired by Proj4js from Mike Adair madairATdmsolutions.ca
- *                      and Richard Greenwood rich@greenwoodmap.com 
- * License: LGPL as per: http://www.gnu.org/copyleft/lesser.html 
+ *                      and Richard Greenwood rich@greenwoodmap.com
+ * License: LGPL as per: http://www.gnu.org/copyleft/lesser.html
  */
 class Projection {
 
@@ -26,11 +26,11 @@ class Projection {
     /**
      * Property: projName
      * The projection class for $this projection, e.g. lcc (lambert conformal conic,
-     * or merc for mercator).  These are exactly equivalent to their Proj4 
+     * or merc for mercator).  These are exactly equivalent to their Proj4
      * counterparts.
      */
     public $projName = null;
-    
+
     /**
      * Property: projection
      * The projection object for $this projection. */
@@ -69,7 +69,7 @@ class Projection {
 
     /**
      *
-     * @var type 
+     * @var type
      */
     protected $wktRE = '/^(\w+)\[(.*)\]$/';
 
@@ -82,16 +82,15 @@ class Projection {
      * (but not always) EPSG codes.
      * TODO: also support the raw def string being passed in and parsed here.
      */
-    public function __construct($srsCode)
-    {
+    public function __construct($srsCode) {
         $this->srsCodeInput = $srsCode;
 
         //check to see if $this is a WKT string
         if (
-            (strpos( $srsCode, 'GEOGCS' ) !== false)
-            || (strpos( $srsCode, 'GEOCCS' ) !== false)
-            || (strpos( $srsCode, 'PROJCS' ) !== false)
-            || (strpos( $srsCode, 'LOCAL_CS' ) !== false)
+            (strpos($srsCode, 'GEOGCS') !== false)
+            || (strpos($srsCode, 'GEOCCS') !== false)
+            || (strpos($srsCode, 'PROJCS') !== false)
+            || (strpos($srsCode, 'LOCAL_CS') !== false)
         ) {
             $this->parseWKT($srsCode);
             $this->deriveConstants();
@@ -108,7 +107,7 @@ class Projection {
                 && ($urn[2] == 'def')
                 && ($urn[3] == 'crs')
             ) {
-                $srsCode = $urn[4] . ':' . $urn[strlen( $urn ) - 1];
+                $srsCode = $urn[4] . ':' . $urn[strlen($urn) - 1];
             }
         } elseif (strpos($srsCode, 'http://') === 0) {
             //url#ID
@@ -150,7 +149,7 @@ class Projection {
     /**
      * Function: loadProjDefinition
      *    Loads the coordinate system initialization string if required.
-     *    Note that dynamic loading happens asynchronously so an application must 
+     *    Note that dynamic loading happens asynchronously so an application must
      *    wait for the readyToUse property is set to true.
      *    To prevent dynamic loading, include the defs through a script tag in
      *    your application.
@@ -158,8 +157,7 @@ class Projection {
      * sources and not having to create a class for each one.
      *
      */
-    public function loadProjDefinition()
-    {
+    public function loadProjDefinition() {
         // Check if in memory.
         if (array_key_exists($this->srsCode, Proj4::$defs)) {
             $this->defsLoaded();
@@ -174,26 +172,25 @@ class Projection {
             //Proj4::loadScript($filename);
             $classname::init();
             $this->defsLoaded(); // success
-        } catch ( Exception $e ) {
+        } catch (Exception $e) {
             $this->loadFromService(); // fail
         }
     }
 
     /**
      * Function: loadFromService
-     *    Creates the REST URL for loading the definition from a web service and 
+     *    Creates the REST URL for loading the definition from a web service and
      *    loads it.
      *
      * DO IT AGAIN. : SHOULD PHP CODE BE GET BY WEBSERVICES?
      */
-    public function loadFromService()
-    {
+    public function loadFromService() {
         //else load from web service
         $url = Proj4::$defsLookupService . '/' . $this->srsAuth . '/' . $this->srsProjNumber . '/proj4/';
 
         try {
             Proj4::$defs[strtoupper($this->srsAuth) . ":" . $this->srsProjNumber] = Proj4::loadScript($url);
-        } catch ( Exception $e ) {
+        } catch (Exception $e) {
             $this->defsFailed();
         }
     }
@@ -203,8 +200,7 @@ class Projection {
      * Continues the Proj object initilization once the def file is loaded
      *
      */
-    public function defsLoaded()
-    {
+    public function defsLoaded() {
         $this->parseDefs();
         $this->loadProjCode($this->projName);
     }
@@ -214,8 +210,7 @@ class Projection {
      *    $this is the loadCheck method to see if the def object exists
      *
      */
-    public function checkDefsLoaded()
-    {
+    public function checkDefsLoaded() {
         return isset(Proj4::$defs[$this->srsCode]) && !empty(Proj4::$defs[$this->srsCode]);
     }
 
@@ -224,9 +219,8 @@ class Projection {
      *    Report an error in loading the defs file, but continue on using WGS84
      *
      */
-    public function defsFailed()
-    {
-        Proj4::reportError( 'failed to load projection definition for: ' . $this->srsCode );
+    public function defsFailed() {
+        Proj4::reportError('failed to load projection definition for: ' . $this->srsCode);
         // set it to something so it can at least continue
         Proj4::$defs[$this->srsCode] = Proj4::$defs['WGS84'];
         $this->defsLoaded();
@@ -240,9 +234,8 @@ class Projection {
      *
      * An exception occurs if the projection is not found.
      */
-    public function loadProjCode($projName)
-    {
-        if (array_key_exists( $projName, Proj4::$proj)) {
+    public function loadProjCode($projName) {
+        if (array_key_exists($projName, Proj4::$proj)) {
             $this->initTransforms();
             return;
         }
@@ -251,7 +244,7 @@ class Projection {
         $class = __NAMESPACE__ . '\\Projections\\' . ucfirst($projName);
 
         if (class_exists($class)) {
-            Proj4::$proj['merc'] = new $class();
+            Proj4::$proj[$projName] = new $class();
             $this->loadProjCodeSuccess($projName);
             return;
         }
@@ -262,7 +255,7 @@ class Projection {
         try {
             Proj4::loadScript($filename);
             $this->loadProjCodeSuccess($projName);
-        } catch ( Exception $e ) {
+        } catch (Exception $e) {
             $this->loadProjCodeFailure($projName);
         }
     }
@@ -272,10 +265,9 @@ class Projection {
      *    Loads any proj dependencies or continue on to final initialization.
      *
      */
-    public function loadProjCodeSuccess($projName)
-    {
+    public function loadProjCodeSuccess($projName) {
         if (isset(Proj4::$proj[$projName]->dependsOn) && !empty(Proj4::$proj[$projName]->dependsOn)) {
-            $this->loadProjCode( Proj4::$proj[$projName]->dependsOn );
+            $this->loadProjCode(Proj4::$proj[$projName]->dependsOn);
         } else {
             $this->initTransforms();
         }
@@ -287,8 +279,7 @@ class Projection {
      *    object has failed and the readyToUse flag will never be set.
      *
      */
-    public function loadProjCodeFailure($projName)
-    {
+    public function loadProjCodeFailure($projName) {
         Proj4::reportError("failed to find projection file for: " . $projName);
         //TBD initialize with identity transforms so proj will still work?
     }
@@ -298,8 +289,7 @@ class Projection {
      *    $this is the loadCheck method to see if the projection code is loaded
      *
      */
-    public function checkCodeLoaded($projName)
-    {
+    public function checkCodeLoaded($projName) {
         return isset(Proj4::$proj[$projName]) && !empty(Proj4::$proj[$projName]);
     }
 
@@ -308,53 +298,49 @@ class Projection {
      *    Finalize the initialization of the Proj object
      *
      */
-    public function initTransforms()
-    {
+    public function initTransforms() {
         $this->projection = clone(Proj4::$proj[$this->projName]);
-        Proj4::extend( $this->projection, $this );
+        Proj4::extend($this->projection, $this);
         $this->init();
 
         // initiate depending class
         if (
             false !== (
-                $dependsOn = isset($this->projection->dependsOn) && !empty($this->projection->dependsOn)
+            $dependsOn = isset($this->projection->dependsOn) && !empty($this->projection->dependsOn)
                 ? $this->projection->dependsOn
                 : false
             )
         ) {
-            Proj4::extend( Proj4::$proj[$dependsOn], $this->projection) && 
+            Proj4::extend(Proj4::$proj[$dependsOn], $this->projection) &&
             Proj4::$proj[$dependsOn]->init() &&
-            Proj4::extend( $this->projection, Proj4::$proj[$dependsOn] );
+            Proj4::extend($this->projection, Proj4::$proj[$dependsOn]);
         }
 
         $this->readyToUse = true;
     }
 
     /**
-     * 
+     *
      */
-    public function init()
-    {
+    public function init() {
         $this->projection->init();
     }
 
     /**
      *
      * @param type $pt
-     * @return type 
+     * @return type
      */
-    public function forward($pt)
-    {
+    public function forward($pt) {
         return $this->projection->forward($pt);
     }
 
     /**
      *
      * @param type $pt
-     * @return type 
+     * @return type
      */
-    public function inverse($pt)
-    {
+    public function inverse($pt) {
         return $this->projection->inverse($pt);
     }
 
@@ -363,19 +349,18 @@ class Projection {
      * Parses a WKT string to get initialization parameters
      *
      */
-    public function parseWKT($wkt)
-    {
+    public function parseWKT($wkt) {
         if (false === ($match = preg_match($this->wktRE, $wkt, $wktMatch))) {
             return;
         }
 
         $wktObject = $wktMatch[1];
         $wktContent = $wktMatch[2];
-        $wktTemp = explode( ",", $wktContent );
-        
-        $wktName = (strtoupper($wktObject) == "TOWGS84") ? "TOWGS84" : array_shift( $wktTemp );
-        $wktName = preg_replace( '/^\"/', "", $wktName );
-        $wktName = preg_replace( '/\"$/', "", $wktName );
+        $wktTemp = explode(",", $wktContent);
+
+        $wktName = (strtoupper($wktObject) == "TOWGS84") ? "TOWGS84" : array_shift($wktTemp);
+        $wktName = preg_replace('/^\"/', "", $wktName);
+        $wktName = preg_replace('/\"$/', "", $wktName);
 
         /*
           $wktContent = implode(",",$wktTemp);
@@ -452,7 +437,7 @@ class Projection {
                 //there may be many variations on the wktName values, add in case
                 //statements as required
 
-                switch($name) {
+                switch ($name) {
                     case 'false_easting':
                         $this->x0 = $value;
                         break;
@@ -481,36 +466,47 @@ class Projection {
             case 'AXIS':
                 $name = strtolower($wktName);
                 $value = array_shift($wktArray);
-                switch( $value ) {
-                    case 'EAST' : $value = 'e';
+                switch ($value) {
+                    case 'EAST' :
+                        $value = 'e';
                         break;
-                    case 'WEST' : $value = 'w';
+                    case 'WEST' :
+                        $value = 'w';
                         break;
-                    case 'NORTH': $value = 'n';
+                    case 'NORTH':
+                        $value = 'n';
                         break;
-                    case 'SOUTH': $value = 's';
+                    case 'SOUTH':
+                        $value = 's';
                         break;
-                    case 'UP' : $value = 'u';
+                    case 'UP' :
+                        $value = 'u';
                         break;
-                    case 'DOWN' : $value = 'd';
+                    case 'DOWN' :
+                        $value = 'd';
                         break;
                     case 'OTHER':
-                    default : $value = ' ';
+                    default :
+                        $value = ' ';
                         break; //FIXME
                 }
 
-                if ( ! $this->axis) {
+                if (!$this->axis) {
                     $this->axis = 'enu';
                 }
 
-                switch( $name ) {
-                    case 'X': $this->axis = $value . substr($this->axis, 1, 2);
+                switch ($name) {
+                    case 'X':
+                        $this->axis = $value . substr($this->axis, 1, 2);
                         break;
-                    case 'Y': $this->axis = substr($this->axis, 0, 1) . $value . substr($this->axis, 2, 1);
+                    case 'Y':
+                        $this->axis = substr($this->axis, 0, 1) . $value . substr($this->axis, 2, 1);
                         break;
-                    case 'Z': $this->axis = substr($this->axis, 0, 2) . $value;
+                    case 'Z':
+                        $this->axis = substr($this->axis, 0, 2) . $value;
                         break;
-                    default : break;
+                    default :
+                        break;
                 }
             case 'MORE_HERE':
                 break;
@@ -528,27 +524,26 @@ class Projection {
      * Parses the PROJ.4 initialization string and sets the associated properties.
      *
      */
-    public function parseDefs()
-    {
+    public function parseDefs() {
         $this->defData = Proj4::$defs[$this->srsCode];
         #$paramName;
         #$paramVal;
 
-        if( !$this->defData ) {
+        if (!$this->defData) {
             return;
         }
 
         $paramArray = explode('+', $this->defData);
 
-        for ($prop = 0; $prop < sizeof( $paramArray ); $prop++) {
-            if (strlen( $paramArray[$prop] ) == 0) {
+        for ($prop = 0; $prop < sizeof($paramArray); $prop++) {
+            if (strlen($paramArray[$prop]) == 0) {
                 continue;
             }
 
             $property = explode("=", $paramArray[$prop]);
             $paramName = strtolower($property[0]);
 
-            if (sizeof( $property ) >= 2) {
+            if (sizeof($property) >= 2) {
                 $paramVal = $property[1];
             }
 
@@ -617,19 +612,19 @@ class Projection {
                     break;
                 case 'x_0':
                     // false easting
-                    $this->x0 = floatval( $paramVal );
+                    $this->x0 = floatval($paramVal);
                     break;
                 case 'y_0':
                     // false northing
-                    $this->y0 = floatval( $paramVal );
+                    $this->y0 = floatval($paramVal);
                     break;
                 case 'k_0':
                     // projection scale factor
-                    $this->k0 = floatval( $paramVal );
+                    $this->k0 = floatval($paramVal);
                     break;
                 case 'k':
                     // both forms returned
-                    $this->k0 = floatval( $paramVal );
+                    $this->k0 = floatval($paramVal);
                     break;
                 case 'r_a':
                     // sphere--area of ellipsoid
@@ -637,7 +632,7 @@ class Projection {
                     break;
                 case 'zone':
                     // UTM Zone
-                    $this->zone = intval( $paramVal, 10 );
+                    $this->zone = intval($paramVal, 10);
                     break;
                 case 'south':
                     // UTM north/south
@@ -653,23 +648,23 @@ class Projection {
                 case 'from_greenwich':
                     $this->from_greenwich = $paramVal * Proj4::$common->D2R;
                     break;
-                    // DGR 2008-07-09 : if pm is not a well-known prime meridian take
-                    // the value instead of 0.0, then convert to radians
+                // DGR 2008-07-09 : if pm is not a well-known prime meridian take
+                // the value instead of 0.0, then convert to radians
                 case 'pm':
                     $paramVal = trim($paramVal);
                     $this->from_greenwich = Proj4::$primeMeridian[$paramVal] ? Proj4::$primeMeridian[$paramVal] : floatval($paramVal);
                     $this->from_greenwich *= Proj4::$common->D2R;
                     break;
-                    // DGR 2010-11-12: axis
+                // DGR 2010-11-12: axis
                 case 'axis':
                     $paramVal = trim($paramVal);
                     $legalAxis = "ewnsud";
 
                     if (
-                        strlen( paramVal ) == 3
-                        && strpos( $legalAxis, substr( $paramVal, 0, 1 ) ) !== false
-                        && strpos( $legalAxis, substr( $paramVal, 1, 1 ) ) !== false
-                        && strpos( $legalAxis, substr( $paramVal, 2, 1 ) ) !== false
+                        strlen(paramVal) == 3
+                        && strpos($legalAxis, substr($paramVal, 0, 1)) !== false
+                        && strpos($legalAxis, substr($paramVal, 1, 1)) !== false
+                        && strpos($legalAxis, substr($paramVal, 2, 1)) !== false
                     ) {
                         $this->axis = $paramVal;
                     } //FIXME: be silent ?
@@ -690,8 +685,7 @@ class Projection {
      * Sets several derived constant values and initialization of datum and ellipse parameters.
      *
      */
-    public function deriveConstants()
-    {
+    public function deriveConstants() {
         if (isset($this->nagrids) && $this->nagrids == '@null') {
             $this->datumCode = 'none';
         }
@@ -707,8 +701,8 @@ class Projection {
         }
 
         // do we have an ellipsoid?
-        if ( ! isset($this->a)) {
-            if ( ! isset($this->ellps) || strlen($this->ellps) == 0 || ! array_key_exists($this->ellps, Proj4::$ellipsoid)) {
+        if (!isset($this->a)) {
+            if (!isset($this->ellps) || strlen($this->ellps) == 0 || !array_key_exists($this->ellps, Proj4::$ellipsoid)) {
                 $ellipse = Proj4::$ellipsoid['WGS84'];
             } else {
                 $ellipse = Proj4::$ellipsoid[$this->ellps];
@@ -717,7 +711,7 @@ class Projection {
             Proj4::extend($this, $ellipse);
         }
 
-        if (isset($this->rf) && ! isset($this->b)) {
+        if (isset($this->rf) && !isset($this->b)) {
             $this->b = (1.0 - 1.0 / $this->rf) * $this->a;
         }
 
@@ -748,13 +742,13 @@ class Projection {
         // used in geocentric
         $this->ep2 = ($this->a2 - $this->b2) / $this->b2;
 
-        if ( ! isset($this->k0)) {
+        if (!isset($this->k0)) {
             //default value
             $this->k0 = 1.0;
         }
 
         //DGR 2010-11-12: axis
-        if ( ! isset($this->axis)) {
+        if (!isset($this->axis)) {
             $this->axis = 'enu';
         }
 
