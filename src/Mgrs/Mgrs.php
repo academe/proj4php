@@ -474,10 +474,10 @@ class Mgrs extends Utm {
         // Return a new Mgrs object.
 
         $mgrs = new static(
-            $easting,
             $northing,
-            $zone_letter,
-            $zone_number
+            $easting,
+            $zone_number,
+            $zone_letter
         );
 
         // Set the accuracy according to the number of digits found.
