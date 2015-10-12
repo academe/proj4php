@@ -5,7 +5,9 @@ Proj4JS Port to PHP5.3
 being actively developed. There is a full [Proj4 PHP port here](https://github.com/proj4php/proj4php)
 with some great composer-based features, that is derived from [proj4JS](https://github.com/proj4js/proj4js).
 I am also experimenting with [some alternative approaches here](https://github.com/judgej/Proj4) that
-will hopefully feed into [proj4php](https://github.com/proj4php/proj4php).**
+will hopefully feed into [proj4php](https://github.com/proj4php/proj4php). This package was started when
+proj4JS was a lot newer and less complete. Both that and proj4php have kept moving forward and
+surpassed it in support for a larger range of projections.**
 
 I just wanted some simple conversions and transforms, and ended up with this. I must be a masachist.
 
