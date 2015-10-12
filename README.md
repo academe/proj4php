@@ -1,6 +1,12 @@
 Proj4JS Port to PHP5.3
 ======================
 
+*Note: I'll fix any issues found here by Pull Request, and keep this package here, but it is not
+being actively developed. There is a full [Proj4 PHP port here](https://github.com/proj4php/proj4php)
+with some great composer-based features, that is derived from [proj4JS](https://github.com/proj4js/proj4js).
+I am also experimenting with [some alternative approaches here](https://github.com/judgej/Proj4) that
+will hopefully feed into [Proj4php](https://github.com/proj4php/proj4php).*
+
 I just wanted some simple conversions and transforms, and ended up with this. I must be a masachist.
 
 Proj4JS has split out the MGRS handling to a separate module, possibly due to licensing issues. It is
