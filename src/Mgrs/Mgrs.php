@@ -286,7 +286,7 @@ class Mgrs extends Utm {
      *        1-60.
      * @return two letter MGRS 100k code.
      */
-    protected function getLetter100kId($column, $row, $parm) {
+    protected static function getLetter100kId($column, $row, $parm) {
         // colOrigin and rowOrigin are the letters at the origin of the set
         $index = $parm - 1;
         $colOrigin = ord(substr(static::SET_ORIGIN_COLUMN_LETTERS, $index, 1));
